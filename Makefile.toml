@@ -1,0 +1,33 @@
+[config]
+skip_core_tasks = true
+
+[tasks.migrate]
+command = "psqldef"
+description = "schema.sqlを参照してmigrateを実行する"
+args = [
+  "-U",
+  "${POSTGRES_USER}",
+  "-W",
+  "${POSTGRES_PASSWORD}", 
+  "-h",
+  "${POSTGRES_HOST}",
+  "-f",
+  "./db/schema.sql",
+  "${POSTGRES_DB}"
+]
+
+[tasks.migrate_dry]
+command = "psqldef"
+description = "schema.sqlを参照してmigrateを実行する"
+args = [
+  "-U",
+  "${POSTGRES_USER}",
+  "-W",
+  "${POSTGRES_PASSWORD}", 
+  "-h",
+  "${POSTGRES_HOST}",
+  "-f",
+  "./db/schema.sql",
+  "${POSTGRES_DB}",
+  "--dry-run"
+]
