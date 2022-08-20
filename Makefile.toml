@@ -31,3 +31,8 @@ args = [
   "${POSTGRES_DB}",
   "--dry-run"
 ]
+
+[tasks.tbls]
+command = "tbls"
+description = "データベースドキュメントを生成する"
+args = ["doc", "-f"]
