@@ -1,0 +1,63 @@
+version: '3.8'
+
+x-environment: &environment
+  POSTGRES_USER: root
+  POSTGRES_PASSWORD: password
+  POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+  POSTGRES_HOST: db
+  POSTGRES_DB: connefut_db
+  PGSSLMODE: disable
+  TZ: "Asia/Tokyo"
+  DATABASE_URL: postgres://root:password@db:5432/connefut_db?sslmode=disable
+  MH_STORAGE: maildir
+  MH_MAILDIR_PATH: /tmp
+
+services:
+  db:
+    image: postgres:latest
+    container_name: db
+    environment: *environment
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  web:
+    build: 
+      context: .
+      target: 'builder'
+    container_name: web
+    environment: *environment
+    ports:
+      - 8080:8080
+    depends_on: 
+      - db
+    tty: true
+    volumes:
+      - .:/app
+      - cargo-cache:/usr/local/cargo/registry
+      - target-cache:/app/target
+    command: /bin/sh -c "cargo watch -s 'mold -run cargo run'"
+  pgweb:
+    image: sosedoff/pgweb
+    container_name: pgweb
+    ports: 
+      - "8081:8081"
+    environment: *environment
+    depends_on:
+      - db
+  mailhog:
+    image: mailhog/mailhog
+    container_name: mailhog
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    environment: *environment
+    volumes:
+      - maildir:/tmp
+volumes:
+  db_data:
+    driver: local
+  cargo-cache:
+  target-cache:
+  maildir:
+
