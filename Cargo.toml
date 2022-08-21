@@ -6,3 +6,29 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+#* framework
+axum = "0.5.9"
+#* runtime
+tokio = {version = "1.20.1", features = ["rt-multi-thread", "macros"]}
+#* cors
+tower-http = { version = "0.3.4", features = ["cors"]}
+#* graphql
+async-graphql = {version = "4.0.10", features = ["chrono"]}
+async-graphql-axum = "4.0.10"
+#*postgres
+sqlx = { version = "0.6.1", features = ["postgres", "runtime-tokio-rustls", "time", "chrono"]}
+#* time
+chrono = "0.4.22"
+#* json
+serde = { version = "1.0.144", features = ["derive"] }
+serde_json = "1.0.83"
+#* error
+anyhow = "1.0.62"
+#* custom error
+thiserror = "1.0.32"
+#* log
+tracing = "0.1.36"
+tracing-subscriber = "0.3.15"
+#* cookie
+cookie = "0.16.0"
+axum-extra = { version = "0.3.7", features = ["cookie"]}
