@@ -39,7 +39,6 @@ services:
       - .:/app
       - cargo-cache:/usr/local/cargo/registry
       - target-cache:/app/target
-    command: /bin/sh -c "cargo watch -s 'mold -run cargo run'"
   pgweb:
     image: sosedoff/pgweb
     container_name: pgweb
