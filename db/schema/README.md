@@ -5,6 +5,9 @@
 | Name | Columns | Comment | Type |
 | ---- | ------- | ------- | ---- |
 | [public.users](public.users.md) | 17 |  | BASE TABLE |
+| [public.prefectures](public.prefectures.md) | 4 |  | BASE TABLE |
+| [public.sports](public.sports.md) | 4 |  | BASE TABLE |
+| [public.tags](public.tags.md) | 4 |  | BASE TABLE |
 
 ## Relations
 

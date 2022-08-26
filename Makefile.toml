@@ -12,7 +12,7 @@ args = [
   "-h",
   "${POSTGRES_HOST}",
   "-f",
-  "./db/schema.sql",
+  "./db/migration/schema.sql",
   "${POSTGRES_DB}"
 ]
 
@@ -27,7 +27,7 @@ args = [
   "-h",
   "${POSTGRES_HOST}",
   "-f",
-  "./db/schema.sql",
+  "./db/migration/schema.sql",
   "${POSTGRES_DB}",
   "--dry-run"
 ]
@@ -36,3 +36,24 @@ args = [
 command = "tbls"
 description = "データベースドキュメントを生成する"
 args = ["doc", "-f"]
+
+[tasks.run]
+command = "cargo"
+description = "Graphqlサーバーの起動"
+args = [
+  "watch",
+  "-x",
+  "fmt",
+  "-s",
+  "mold -run cargo run --bin connefut_api", 
+]
+
+[tasks.schema]
+command = "cargo"
+description = "graphql.schemaに書き出す"
+args = ["run", "--bin", "write_schema"]
+
+[tasks.init_data]
+command = "cargo"
+description = "初期データの生成"
+args = ["run", "--bin", "initial_data"]

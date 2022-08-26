@@ -6,8 +6,11 @@ x-environment: &environment
   POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
   POSTGRES_HOST: db
   POSTGRES_DB: connefut_db
+  POSTGRES_PORT: 5432
   PGSSLMODE: disable
   TZ: "Asia/Tokyo"
+  API_URL: http://localhost:8080
+  RUST_BACKTRACE: full
   DATABASE_URL: postgres://root:password@db:5432/connefut_db?sslmode=disable
   MH_STORAGE: maildir
   MH_MAILDIR_PATH: /tmp
@@ -36,7 +39,6 @@ services:
       - .:/app
       - cargo-cache:/usr/local/cargo/registry
       - target-cache:/app/target
-    command: /bin/sh -c "cargo watch -s 'mold -run cargo run'"
   pgweb:
     image: sosedoff/pgweb
     container_name: pgweb
