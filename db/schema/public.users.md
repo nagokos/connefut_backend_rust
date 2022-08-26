@@ -13,16 +13,16 @@
 | avatar | varchar | 'https://abs.twimg.com/sticky/default_profile_images/default_profile.png'::character varying | false |  |  |  |
 | introduction | varchar(160) |  | true |  |  |  |
 | email_verification_status | varchar | 'pending'::character varying | false |  |  |  |
-| password_digest | varchar |  | true |  |  |  |
-| created_at | timestamp with time zone |  | false |  |  |  |
-| updated_at | timestamp with time zone |  | false |  |  |  |
 | email_verification_code | varchar |  | true |  |  |  |
 | email_verification_code_expires_at | timestamp with time zone |  | true |  |  |  |
+| password_digest | varchar |  | true |  |  |  |
 | last_sign_in_at | timestamp with time zone |  | true |  |  |  |
 | unverified_email | varchar(160) |  | true |  |  |  |
 | password_reset_token | varchar |  | true |  |  |  |
 | password_reset_token_expires_at | timestamp with time zone |  | true |  |  |  |
 | website_url | varchar |  | true |  |  |  |
+| created_at | timestamp with time zone |  | false |  |  |  |
+| updated_at | timestamp with time zone |  | false |  |  |  |
 
 ## Constraints
 
