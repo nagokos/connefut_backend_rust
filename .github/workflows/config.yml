@@ -1,10 +1,6 @@
 name: Rust
 
-on:
-  push:
-    paths: 
-      - '**/Cargo.toml'
-      - '**/Cargo.lock'
+on: [push]
 
 env:
   RUSTC_FORCE_INCREMENTAL: 1
