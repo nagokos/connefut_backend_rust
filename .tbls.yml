@@ -1,2 +1,0 @@
-dsn: postgres://root:password@db:5432/connefut_db?sslmode=disable
-docPath: db/schema
