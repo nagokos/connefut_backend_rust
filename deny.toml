@@ -1,3 +1,9 @@
+[advisories]
+vulnerability = "deny"
+unmaintained = "warn"
+yanked = "warn"
+notice = "warn"
+
 [licenses]
 unlicensed = "deny"
 allow-osi-fsf-free = "neither"
