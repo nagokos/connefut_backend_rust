@@ -53,12 +53,6 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - uses: EmbarkStudios/cargo-deny-action@v1
-      with:
-        log-level: warn
-        command: check
-        arguments: --all-features
-        command-arguments: ""
-        credentials: https://${{ secrets.GITHUB_USER }}:${{ secrets.GITHUB_PAT }}@github.com
   security_audit:
     runs-on: ubuntu-latest
     needs: [build_cache]
