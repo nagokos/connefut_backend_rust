@@ -27,7 +27,7 @@ jobs:
           restore-keys: ${{ runner.os }}-cargo-
       - name: build 
         run: cargo build
-  install_toolchain:
+  lint:
     runs-on: ubuntu-latest
     needs: [build_cache]
     steps:
@@ -38,30 +38,11 @@ jobs:
           profile: minimal
           toolchain: stable
           conponents: clippy, rustfmt
-  lint:
-    runs-on: ubuntu-latest
-    needs: [install_toolchain]
-    steps:
-      - uses: actions/checkout@v3
-      - name: rust list
+      - name: rust lint
         run: |
           cargo fmt --all -- --check
           cargo clippy -- -D warnings
-  cargo_deny:
-    runs-on: ubuntu-latest
-    needs: [build_cache]
-    steps:
-    - uses: actions/checkout@v2
-    - uses: EmbarkStudios/cargo-deny-action@v1
-  security_audit:
-    runs-on: ubuntu-latest
-    needs: [build_cache]
-    steps:
-      - uses: actions/checkout@v1
-      - uses: actions-rs/audit-check@v1
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-  install_check_tools:
+  check:
     runs-on: ubuntu-latest
     needs: [build_cache]
     steps:
@@ -69,18 +50,21 @@ jobs:
       - name: install cargo check tools 
         run: |
           cargo install --locked cargo-outdated
-          cargo install --locked cargo-udeps
+          cargo install cargo-udeps --locked
           cargo install --locked cargo-pants
-  check:
-    runs-on: ubuntu-latest
-    needs: [install_check_tools]
-    steps:
-      - uses: actions/checkout@v3
+      - name: install nightly
+        run:  rustup install nightly
       - name: check rust
         run: |
           cargo outdated --exit-code 1
-          cargo udeps
-          cargo pants          
+          cargo +nightly udeps
+          cargo pants   
+      - name: cargo deny
+        uses: EmbarkStudios/cargo-deny-action@v1   
+      - name: cargo audit 
+        uses: actions-rs/audit-check@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}   
   notification_success:
     if: success()
     runs-on: ubuntu-latest
