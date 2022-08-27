@@ -68,7 +68,7 @@ jobs:
   notification_success:
     if: success()
     runs-on: ubuntu-latest
-    needs: [check, lint, security_audit, cargo_deny]
+    needs: [check, lint]
     steps:
     - name: check out
       uses: actions/checkout@v3
@@ -81,7 +81,7 @@ jobs:
   notification_failure:
     if: failure()
     runs-on: ubuntu-latest
-    needs: [check, lint, security_audit, cargo_deny]
+    needs: [check, lint]
     steps:
     - name: check out
       uses: actions/checkout@v3
