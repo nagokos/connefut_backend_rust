@@ -21,7 +21,7 @@ async-graphql-axum = "4.0.11"
 #*postgres
 sqlx = { version = "0.6.1", features = ["postgres", "runtime-tokio-rustls", "time", "chrono"]}
 #* time
-chrono = "0.4.22"
+chrono =  {version = "0.4.22", default-features = false, features = ["clock", "std"]}
 #* json
 serde = { version = "1.0.144", features = ["derive"] }
 serde_json = "1.0.85"
