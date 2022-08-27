@@ -69,7 +69,7 @@ jobs:
       - name: install cargo check tools 
         run: |
           cargo install --locked cargo-outdated
-          cargo install cargo-udeps --locked
+          cargo install --locked cargo-udeps
           cargo install --locked cargo-pants
   check:
     runs-on: ubuntu-latest
