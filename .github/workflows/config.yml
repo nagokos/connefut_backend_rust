@@ -79,7 +79,7 @@ jobs:
       - name: check rust
         run: |
           cargo outdated --exit-code 1
-          rustup install nightly && cargo +nightly udeps
+          cargo udeps
           cargo pants          
   notification_success:
     if: success()
