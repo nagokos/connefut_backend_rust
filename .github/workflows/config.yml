@@ -76,6 +76,7 @@ jobs:
         run: |
           cargo install --locked cargo-outdated
           cargo install cargo-udeps --locked
+          rustup install nightly
           cargo install --locked cargo-pants
   check:
     runs-on: ubuntu-latest
