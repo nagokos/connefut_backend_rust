@@ -1,6 +1,6 @@
 --* users table
 CREATE TABLE IF NOT EXISTS "users"(
-  "id" BIGSERIAL PRIMARY KEY UNIQUE, 
+  "id" BIGSERIAL PRIMARY KEY, 
   "name" VARCHAR(50) NOT NULL, 
   "email" VARCHAR(100) UNIQUE NOT NULL, 
   "role" VARCHAR NOT NULL DEFAULT 'general', 
@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS "users"(
   "email_verification_code_expires_at" TIMESTAMP WITH TIME ZONE NULL, 
   "password_digest" VARCHAR NULL, 
   "last_sign_in_at" TIMESTAMP WITH TIME ZONE, 
-  "unverified_email" VARCHAR(160),
+  "unverified_email" VARCHAR(100),
   "password_reset_token" VARCHAR,
   "password_reset_token_expires_at" TIMESTAMP WITH TIME ZONE,
   "website_url" VARCHAR,
@@ -22,7 +22,7 @@ CREATE INDEX ON "users"("email_verification_code");
 
 --* prefectures table
 CREATE TABLE IF NOT EXISTS "prefectures"(
-  "id" BIGSERIAL PRIMARY KEY UNIQUE, 
+  "id" BIGSERIAL PRIMARY KEY, 
   "name" VARCHAR NOT NULL UNIQUE, 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, 
   "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS "prefectures"(
 
 --* sports table
 CREATE TABLE IF NOT EXISTS "sports"(
-  "id" BIGSERIAL PRIMARY KEY UNIQUE, 
+  "id" BIGSERIAL PRIMARY KEY, 
   "name" VARCHAR NOT NULL UNIQUE, 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, 
   "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL
@@ -38,7 +38,7 @@ CREATE TABLE IF NOT EXISTS "sports"(
 
 --* tags table
 CREATE TABLE IF NOT EXISTS "tags"(
-  "id" BIGSERIAL PRIMARY KEY UNIQUE, 
+  "id" BIGSERIAL PRIMARY KEY, 
   "name" VARCHAR UNIQUE NOT NULL, 
   "created_at" TIMESTAMP WITH TIME ZONE NOT NULL, 
   "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL
