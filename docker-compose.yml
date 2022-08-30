@@ -1,25 +1,10 @@
 version: '3.8'
 
-x-environment: &environment
-  POSTGRES_USER: root
-  POSTGRES_PASSWORD: password
-  POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
-  POSTGRES_HOST: db
-  POSTGRES_DB: connefut_db
-  POSTGRES_PORT: 5432
-  PGSSLMODE: disable
-  TZ: "Asia/Tokyo"
-  API_URL: http://localhost:8080
-  RUST_BACKTRACE: full
-  DATABASE_URL: postgres://root:password@db:5432/connefut_db?sslmode=disable
-  MH_STORAGE: maildir
-  MH_MAILDIR_PATH: /tmp
-
 services:
   db:
     image: postgres:latest
     container_name: db
-    environment: *environment
+    env_file: .env
     ports:
       - "5432:5432"
     volumes:
@@ -29,7 +14,9 @@ services:
       context: .
       target: 'builder'
     container_name: web
-    environment: *environment
+    env_file: .env
+    environment:
+      TBLS_DOC_PATH: db/doc
     ports:
       - 8080:8080
     depends_on: 
@@ -44,7 +31,7 @@ services:
     container_name: pgweb
     ports: 
       - "8081:8081"
-    environment: *environment
+    env_file: .env
     depends_on:
       - db
   mailhog:
@@ -53,7 +40,9 @@ services:
     ports:
       - "1025:1025"
       - "8025:8025"
-    environment: *environment
+    environment: 
+      MH_STORAGE: maildir
+      MH_MAILDIR_PATH: /tmp
     volumes:
       - maildir:/tmp
 volumes:
