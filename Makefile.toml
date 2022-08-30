@@ -72,7 +72,7 @@ command = "cargo"
 description = "graphql.schemaに書き出す"
 args = ["run", "--bin", "write_schema"]
 
-[tasks.init_data]
+[tasks.create_initial_data]
 command = "cargo"
 description = "初期データの生成"
 args = ["run", "--bin", "initial_data"]
