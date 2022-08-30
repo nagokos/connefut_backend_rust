@@ -6,7 +6,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('tags_id_seq'::regclass) | false |  |  |  |
+| id | bigint | nextval('tags_id_seq'::regclass) | false | [public.recruitment_tags](public.recruitment_tags.md) |  |  |
 | name | varchar |  | false |  |  |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |

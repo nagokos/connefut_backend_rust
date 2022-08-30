@@ -1,4 +1,4 @@
-# public.prefectures
+# public.rooms
 
 ## Description
 
@@ -6,8 +6,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('prefectures_id_seq'::regclass) | false | [public.recruitments](public.recruitments.md) [public.user_activity_areas](public.user_activity_areas.md) |  |  |
-| name | varchar |  | false |  |  |  |
+| id | bigint | nextval('rooms_id_seq'::regclass) | false | [public.messages](public.messages.md) [public.entries](public.entries.md) [public.room_read_managements](public.room_read_managements.md) |  |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |
 
@@ -15,17 +14,17 @@
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| prefectures_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| rooms_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
-| prefectures_pkey | CREATE UNIQUE INDEX prefectures_pkey ON public.prefectures USING btree (id) |
+| rooms_pkey | CREATE UNIQUE INDEX rooms_pkey ON public.rooms USING btree (id) |
 
 ## Relations
 
-![er](public.prefectures.svg)
+![er](public.rooms.svg)
 
 ---
 

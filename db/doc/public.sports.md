@@ -6,7 +6,7 @@
 
 | Name | Type | Default | Nullable | Children | Parents | Comment |
 | ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('sports_id_seq'::regclass) | false |  |  |  |
+| id | bigint | nextval('competitions_id_seq'::regclass) | false | [public.recruitments](public.recruitments.md) [public.user_play_sports](public.user_play_sports.md) |  |  |
 | name | varchar |  | false |  |  |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |
@@ -15,15 +15,15 @@
 
 | Name | Type | Definition |
 | ---- | ---- | ---------- |
-| sports_pkey | PRIMARY KEY | PRIMARY KEY (id) |
-| sports_name_key | UNIQUE | UNIQUE (name) |
+| competitions_pkey | PRIMARY KEY | PRIMARY KEY (id) |
+| competitions_name_key | UNIQUE | UNIQUE (name) |
 
 ## Indexes
 
 | Name | Definition |
 | ---- | ---------- |
-| sports_pkey | CREATE UNIQUE INDEX sports_pkey ON public.sports USING btree (id) |
-| sports_name_key | CREATE UNIQUE INDEX sports_name_key ON public.sports USING btree (name) |
+| competitions_pkey | CREATE UNIQUE INDEX competitions_pkey ON public.sports USING btree (id) |
+| competitions_name_key | CREATE UNIQUE INDEX competitions_name_key ON public.sports USING btree (name) |
 
 ## Relations
 

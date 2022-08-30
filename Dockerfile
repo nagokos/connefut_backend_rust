@@ -23,11 +23,11 @@ RUN apt-get update && \
   curl \
   && rm -rf /var/lib/apt/lists/*
 
-RUN echo "install sqldef" \
-    && curl -L -O https://github.com/k0kubun/sqldef/releases/download/v0.13.7/psqldef_linux_amd64.tar.gz \
-    && tar xf psqldef_linux_amd64.tar.gz \
-    && rm psqldef_linux_amd64.tar.gz \
-    && mv psqldef /usr/local/bin \
+RUN echo "install golang-migrate" \
+    && curl -L -O https://github.com/golang-migrate/migrate/releases/download/v4.15.2/migrate.linux-amd64.tar.gz \
+    && tar xf migrate.linux-amd64.tar.gz \
+    && rm migrate.linux-amd64.tar.gz \
+    && mv migrate /usr/local/bin \
     && echo "install tbls" \
     && curl -L -O https://github.com/k1LoW/tbls/releases/download/v1.56.1/tbls_v1.56.1_linux_amd64.tar.gz \
     && tar xf tbls_v1.56.1_linux_amd64.tar.gz \
