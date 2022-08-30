@@ -1,0 +1,4 @@
+ALTER TABLE "recruitments" 
+  ALTER COLUMN "status" DROP DEFAULT,
+  ALTER COLUMN "status" TYPE VARCHAR,
+  ALTER COLUMN "status" SET DEFAULT 'draft';

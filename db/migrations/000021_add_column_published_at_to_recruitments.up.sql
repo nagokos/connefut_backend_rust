@@ -1,0 +1,2 @@
+ALTER TABLE "recruitments"
+  ADD COLUMN "published_at" TIMESTAMP WITH TIME ZONE

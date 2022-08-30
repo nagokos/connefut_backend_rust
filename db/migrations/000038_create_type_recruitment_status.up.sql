@@ -1,0 +1,1 @@
+CREATE TYPE recruitment_status AS ENUM ('draft', 'published', 'closed')

@@ -1,0 +1,1 @@
+ALTER TABLE "sports" RENAME TO "competitions";

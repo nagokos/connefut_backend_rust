@@ -1,0 +1,4 @@
+ALTER TABLE "users" 
+  ALTER COLUMN "role" DROP DEFAULT,
+  ALTER COLUMN "role" TYPE VARCHAR,
+  ALTER COLUMN "role" SET DEFAULT 'general';

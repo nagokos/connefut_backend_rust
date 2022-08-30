@@ -1,0 +1,3 @@
+ALTER TABLE "room_read_managements"
+  ADD COLUMN "created_at" TIMESTAMP WITH TIME ZONE NOT NULL,
+  ADD COLUMN "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL;
