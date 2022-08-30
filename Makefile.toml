@@ -1,35 +1,54 @@
 [config]
 skip_core_tasks = true
 
-[tasks.migrate]
-command = "psqldef"
-description = "schema.sqlを参照してmigrateを実行する"
+[tasks.migrate_create]
+command = "migrate"
+description = "マイグレーションファイルを作成する makers migrate_create {file_name}"
 args = [
-  "-U",
-  "${POSTGRES_USER}",
-  "-W",
-  "${POSTGRES_PASSWORD}", 
-  "-h",
-  "${POSTGRES_HOST}",
-  "-f",
-  "./db/migration/schema.sql",
-  "${POSTGRES_DB}"
+  "create",
+  "-ext",
+  "sql",
+  "-dir",
+  "db/migrations",
+  "-seq",
+  "${@}"
 ]
 
-[tasks.migrate_dry]
-command = "psqldef"
-description = "schema.sqlを参照してmigrateを実行する"
+[tasks.migrate_up]
+command = "migrate"
+description = "migrate upを実行 migrate_up {version}"
 args = [
-  "-U",
-  "${POSTGRES_USER}",
-  "-W",
-  "${POSTGRES_PASSWORD}", 
-  "-h",
-  "${POSTGRES_HOST}",
-  "-f",
-  "./db/migration/schema.sql",
-  "${POSTGRES_DB}",
-  "--dry-run"
+  "-database",
+  "${POSTGRESQL_URL}",
+  "-path",
+  "db/migrations",
+  "up",
+  "${@}"
+]
+
+
+[tasks.migrate_down]
+command = "migrate"
+description = "migrate upを実行 migrate_down {version}"
+args = [
+  "-database",
+  "${POSTGRESQL_URL}",
+  "-path",
+  "db/migrations",
+  "down",
+  "${@}"
+]
+
+[tasks.migrate_force]
+command = "migrate"
+description = "指定のバージョンを実行 migrate_force {version}"
+args = [
+  "-database",
+  "${POSTGRESQL_URL}",
+  "-path",
+  "db/migrations",
+  "force",
+  "${@}"
 ]
 
 [tasks.tbls]
