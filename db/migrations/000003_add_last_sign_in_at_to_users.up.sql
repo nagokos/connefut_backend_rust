@@ -1,2 +1,0 @@
-ALTER TABLE "users" 
-  ADD COLUMN "last_sign_in_at" TIMESTAMP WITH TIME ZONE NULL;

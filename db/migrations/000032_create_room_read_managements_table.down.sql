@@ -1,1 +1,0 @@
-DROP TABLE IF EXISTS "room_read_managements";

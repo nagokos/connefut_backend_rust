@@ -1,2 +1,0 @@
-ALTER TABLE "applicants"
-  ADD COLUMN "message" VARCHAR(1000) NOT NULL;
