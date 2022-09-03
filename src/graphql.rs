@@ -19,9 +19,3 @@ pub struct Query(RootQuery, PrefectureQuery, SportQuery, TagQuery, UserQuery);
 pub struct Mutation(UserMutation);
 
 pub type GraphqlSchema = Schema<Query, Mutation, EmptySubscription>;
-
-#[derive(Debug, Error)]
-pub enum ApplicationError {
-    #[error("Internal Server Error")]
-    ServerError(String),
-}
