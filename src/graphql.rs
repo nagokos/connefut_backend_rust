@@ -1,5 +1,4 @@
 use async_graphql::{EmptySubscription, MergedObject, Schema};
-use thiserror::Error;
 
 use self::resolvers::{
     prefecture_resolver::PrefectureQuery,
