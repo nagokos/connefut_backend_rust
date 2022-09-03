@@ -74,7 +74,7 @@ impl RegisterUserInput {
                     };
                     return Ok(Some(error.into()));
                 }
-                return Ok(None);
+                Ok(None)
             }
             Err(e) => {
                 tracing::error!("{:?}", e);
