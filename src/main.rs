@@ -1,18 +1,21 @@
-use async_graphql::{EmptyMutation, EmptySubscription, Schema};
+use self::graphql::{GraphqlSchema, Mutation, Query};
+use async_graphql::{EmptySubscription, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
-    http::{HeaderValue, Method},
+    http::{header, HeaderValue, Method},
     routing::post,
     Extension, Router, Server,
 };
-use connefut_api::graphql::{GraphqlSchema, Query};
 use std::{sync::Arc, *};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 use tower_http::cors::CorsLayer;
 
+pub mod config;
 mod database;
-pub mod graphql;
+mod graphql;
+
+use config::get_config;
 use database::pool;
 
 async fn graphql_handler(schema: Extension<GraphqlSchema>, req: GraphQLRequest) -> GraphQLResponse {
@@ -27,7 +30,8 @@ async fn main() {
         .init();
 
     let server = async {
-        let pool = pool().await.unwrap();
+        let config = get_config();
+        let pool = pool(config).await.unwrap();
         let arc_pool = Arc::new(pool);
         let schema = Schema::build(Query::default(), EmptyMutation, EmptySubscription)
             .data(arc_pool)
