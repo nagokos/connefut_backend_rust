@@ -61,7 +61,7 @@ async fn get_prefectures() -> anyhow::Result<Result> {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert("Content-Type", "application-json".parse()?);
 
-    let api_key = dotenvy::var("API_KEY")?;
+    let api_key = env::var("API_KEY")?;
     headers.insert("X-API-KEY", api_key.as_str().parse()?);
 
     let resp = client
