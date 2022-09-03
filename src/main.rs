@@ -42,6 +42,13 @@ async fn main() {
             .layer(
                 CorsLayer::new()
                     .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+                    .allow_headers(vec![
+                        header::ACCEPT,
+                        header::ACCEPT_LANGUAGE,
+                        header::AUTHORIZATION,
+                        header::CONTENT_LANGUAGE,
+                        header::CONTENT_TYPE,
+                    ])
                     .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
                     .allow_credentials(true),
             )
