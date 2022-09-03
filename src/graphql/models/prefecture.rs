@@ -10,7 +10,7 @@ pub struct Prefecture {
 
 #[Object]
 impl Prefecture {
-    async fn id(&self) -> ID {
+    pub async fn id(&self) -> ID {
         encode_config(format!("Prefecture:{}", self.id), URL_SAFE).into()
     }
     async fn name(&self) -> &str {
