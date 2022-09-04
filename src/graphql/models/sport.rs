@@ -10,8 +10,8 @@ pub struct Sport {
 
 #[Object]
 impl Sport {
-    async fn id(&self) -> ID {
-        encode_config(format!("Prefecture:{}", self.id), URL_SAFE).into()
+    pub async fn id(&self) -> ID {
+        encode_config(format!("Sport:{}", self.id), URL_SAFE).into()
     }
     async fn name(&self) -> &str {
         &self.name

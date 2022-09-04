@@ -4,14 +4,14 @@ use sqlx::PgPool;
 
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct Tag {
-    id: i64,
-    name: String,
+    pub id: i64,
+    pub name: String,
 }
 
 #[Object]
 impl Tag {
-    async fn id(&self) -> ID {
-        encode_config(format!("Prefecture:{}", self.id), URL_SAFE).into()
+    pub async fn id(&self) -> ID {
+        encode_config(format!("Tag:{}", self.id), URL_SAFE).into()
     }
     async fn name(&self) -> &str {
         &self.name

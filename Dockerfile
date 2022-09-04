@@ -43,7 +43,8 @@ RUN echo "git clone mold" \
 
 RUN echo "install rust tools" \
     && rustup component add rustfmt clippy \
-    && cargo install cargo-watch cargo-make cargo-edit cargo-audit \
+    && cargo install cargo-watch cargo-edit cargo-audit \
+    && cargo install --force cargo-make \
     && cargo install --locked cargo-outdated
 
 RUN cargo build --release

@@ -19,7 +19,7 @@ command = "migrate"
 description = "migrate upを実行 migrate_up {version}"
 args = [
   "-database",
-  "${POSTGRESQL_URL}",
+  "${POSTGRES_URL}",
   "-path",
   "db/migrations",
   "up",
@@ -32,7 +32,7 @@ command = "migrate"
 description = "migrate upを実行 migrate_down {version}"
 args = [
   "-database",
-  "${POSTGRESQL_URL}",
+  "${POSTGRES_URL}",
   "-path",
   "db/migrations",
   "down",
@@ -44,7 +44,7 @@ command = "migrate"
 description = "指定のバージョンを実行 migrate_force {version}"
 args = [
   "-database",
-  "${POSTGRESQL_URL}",
+  "${POSTGRES_URL}",
   "-path",
   "db/migrations",
   "force",

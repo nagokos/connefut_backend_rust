@@ -1,10 +1,10 @@
 use chrono::prelude::*;
 
-use dotenvy::dotenv;
 use serde::Deserialize;
 use sqlx::{PgPool, Postgres, QueryBuilder};
+use std::env;
 
-use connefut_api::database::pool;
+use connefut_api::{config::get_config, database::pool};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Deserialize, Debug)]
@@ -20,13 +20,12 @@ struct Result {
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
-    dotenv().ok();
-
     tracing_subscriber::fmt()
         .with_span_events(FmtSpan::CLOSE)
         .init();
 
-    let pool = pool().await?;
+    let config = get_config();
+    let pool = pool(config).await?;
     insert_initial_prefectures_data(&pool).await?;
     insert_initial_sports_data(&pool).await?;
     insert_initial_tags_data(&pool).await?;
@@ -62,7 +61,7 @@ async fn get_prefectures() -> anyhow::Result<Result> {
     let mut headers = reqwest::header::HeaderMap::new();
     headers.insert("Content-Type", "application-json".parse()?);
 
-    let api_key = dotenvy::var("API_KEY")?;
+    let api_key = env::var("API_KEY")?;
     headers.insert("X-API-KEY", api_key.as_str().parse()?);
 
     let resp = client

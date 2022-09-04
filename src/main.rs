@@ -1,18 +1,21 @@
-use async_graphql::{EmptyMutation, EmptySubscription, Schema};
+use self::graphql::{GraphqlSchema, Mutation, Query};
+use async_graphql::{EmptySubscription, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
-    http::{HeaderValue, Method},
+    http::{header, HeaderValue, Method},
     routing::post,
     Extension, Router, Server,
 };
-use connefut_api::graphql::{GraphqlSchema, Query};
 use std::{sync::Arc, *};
 use tracing_subscriber::fmt::format::FmtSpan;
 
 use tower_http::cors::CorsLayer;
 
+pub mod config;
 mod database;
-pub mod graphql;
+mod graphql;
+
+use config::get_config;
 use database::pool;
 
 async fn graphql_handler(schema: Extension<GraphqlSchema>, req: GraphQLRequest) -> GraphQLResponse {
@@ -27,9 +30,10 @@ async fn main() {
         .init();
 
     let server = async {
-        let pool = pool().await.unwrap();
+        let config = get_config();
+        let pool = pool(config).await.unwrap();
         let arc_pool = Arc::new(pool);
-        let schema = Schema::build(Query::default(), EmptyMutation, EmptySubscription)
+        let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
             .data(arc_pool)
             .finish();
 
@@ -38,6 +42,13 @@ async fn main() {
             .layer(
                 CorsLayer::new()
                     .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+                    .allow_headers(vec![
+                        header::ACCEPT,
+                        header::ACCEPT_LANGUAGE,
+                        header::AUTHORIZATION,
+                        header::CONTENT_LANGUAGE,
+                        header::CONTENT_TYPE,
+                    ])
                     .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
                     .allow_credentials(true),
             )
