@@ -11,8 +11,7 @@ use sqlx::{postgres::PgRow, PgPool, Row};
 use std::ops::Add;
 
 use crate::graphql::{
-    mail::{self, sender::send_email_verification_code},
-    mutations::user_mutation::RegisterUserInput,
+    mail::sender::send_email_verification_code, mutations::user_mutation::RegisterUserInput,
 };
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
