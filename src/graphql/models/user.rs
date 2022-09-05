@@ -86,7 +86,7 @@ impl Viewer {
 }
 
 #[tracing::instrument(skip(input))]
-pub async fn register_user(pool: &PgPool, input: &RegisterUserInput) -> Result<RegisterUserResult> {
+pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
     let sql = r#"
         INSERT INTO users
             (name, email, unverified_email, password_digest, email_verification_code,
