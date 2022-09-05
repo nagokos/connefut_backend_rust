@@ -33,7 +33,7 @@ pub struct RegisterUserInput {
 }
 
 impl RegisterUserInput {
-    pub async fn register_user_validate(&self) -> Option<RegisterUserResult> {
+    pub async fn register_user_validate(&self) -> Option<RegisterUserInvalidInputErrors> {
         match self.validate() {
             Ok(_) => None,
             Err(e) => {
@@ -56,14 +56,14 @@ impl RegisterUserInput {
                         }
                     })
                     .collect();
-                Some(RegisterUserInvalidInputErrors { errors }.into())
+                Some(RegisterUserInvalidInputErrors { errors })
             }
         }
     }
     pub async fn check_already_exists_email(
         &self,
         pool: &PgPool,
-    ) -> Result<Option<RegisterUserResult>> {
+    ) -> Result<Option<RegisterUserAlreadyExistsEmailError>> {
         let is_exists = is_already_exists_email(&self.email, pool).await;
         match is_exists {
             Ok(is_exists) => {
@@ -72,7 +72,7 @@ impl RegisterUserInput {
                     let error = RegisterUserAlreadyExistsEmailError {
                         message: String::from("このメールアドレスは既に存在します"),
                     };
-                    return Ok(Some(error.into()));
+                    return Ok(Some(error));
                 }
                 Ok(None)
             }
