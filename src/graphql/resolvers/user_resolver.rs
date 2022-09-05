@@ -3,8 +3,9 @@ use async_graphql::{Context, Object, Result};
 use crate::{
     database::get_db_pool,
     graphql::{
-        models::user::{register_user, User, Viewer},
-        mutations::user_mutation::{RegisterUserInput, RegisterUserResult},
+        auth::jwt::{self, Claims},
+        models::user::{self, User, Viewer},
+        mutations::user_mutation::{RegisterUserInput, RegisterUserResult, RegisterUserSuccess},
     },
 };
 
@@ -51,16 +52,30 @@ impl UserMutation {
         let pool = get_db_pool(ctx).await?;
 
         match input.register_user_validate().await {
-            Some(errors) => return Ok(errors),
+            Some(errors) => return Ok(errors.into()),
             None => (),
         }
 
         match input.check_already_exists_email(pool).await? {
-            Some(error) => return Ok(error),
+            Some(error) => return Ok(error.into()),
             None => (),
         }
 
-        let result = register_user(pool, &input).await?;
-        Ok(result)
+        let user = user::create(pool, &input).await?;
+
+        let claims = Claims {
+            sub: user.id.to_string(),
+            ..Default::default()
+        };
+        match jwt::decode(claims) {
+            Ok(token) => {
+                jwt::set_jwt_cookie(token, ctx);
+                let viewer = Viewer {
+                    account_user: user.into(),
+                };
+                Ok(RegisterUserSuccess { viewer }.into())
+            }
+            Err(e) => Err(e.into()),
+        }
     }
 }
