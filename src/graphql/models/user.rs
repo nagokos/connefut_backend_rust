@@ -96,8 +96,8 @@ pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
         RETURNING *
     "#;
 
-    let password_hash = generate_password_hash(input.password.as_bytes()).await?;
-    let email_verification_code = generate_email_verification_code().await;
+    let password_hash = generate_password_hash(input.password.as_bytes())?;
+    let email_verification_code = generate_email_verification_code();
     let now = chrono::Local::now();
     let expires_at = now.add(Duration::days(1));
 
@@ -117,11 +117,14 @@ pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
     match user {
         Ok(user) => {
             tracing::info!("Register user successed!!");
-            let viewer = Viewer {
-                account_user: user.into(),
-            };
-            let result = RegisterUserSuccess { viewer };
-            Ok(result.into())
+            match send_email_verification_code(&user).await {
+                Ok(_) => (),
+                Err(e) => {
+                    tracing::error!("{:?}", e);
+                    return Err(e);
+                }
+            }
+            Ok(user)
         }
         Err(e) => {
             tracing::error!("Register user failed.");
@@ -151,7 +154,7 @@ pub async fn is_already_exists_email(email: &str, pool: &PgPool) -> Result<bool>
     Ok(is_exists)
 }
 
-async fn generate_email_verification_code() -> String {
+fn generate_email_verification_code() -> String {
     let mut rng = rand::thread_rng();
     let mut code = String::from("");
     for _i in 0..=6 {
@@ -160,7 +163,7 @@ async fn generate_email_verification_code() -> String {
     code
 }
 
-async fn generate_password_hash(password: &[u8]) -> Result<String> {
+fn generate_password_hash(password: &[u8]) -> Result<String> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     match argon2.hash_password(password, &salt) {
