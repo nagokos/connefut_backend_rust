@@ -5,13 +5,14 @@ use argon2::{
 };
 use async_graphql::{Enum, Object, ID};
 use base64::{encode_config, URL_SAFE};
-use chrono::Duration;
+use chrono::{DateTime, Duration, Local};
 use rand::Rng;
 use sqlx::{postgres::PgRow, PgPool, Row};
 use std::ops::Add;
 
-use crate::graphql::mutations::user_mutation::{
-    RegisterUserInput, RegisterUserResult, RegisterUserSuccess,
+use crate::graphql::{
+    mail::{self, sender::send_email_verification_code},
+    mutations::user_mutation::RegisterUserInput,
 };
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
@@ -40,6 +41,8 @@ pub struct User {
     pub role: UserRole,
     pub introduction: Option<String>,
     pub email_verification_status: EmailVerificationStatus,
+    pub email_verification_code: Option<String>,
+    pub email_verification_code_expires_at: Option<DateTime<Local>>,
 }
 
 #[Object]
