@@ -35,6 +35,7 @@ async fn main() {
         let arc_pool = Arc::new(pool);
         let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
             .data(arc_pool)
+            .data(config)
             .finish();
 
         let app = Router::new()
