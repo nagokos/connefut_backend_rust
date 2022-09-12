@@ -1,7 +1,7 @@
 use anyhow::{anyhow, Result};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
-    Argon2,
+    Argon2, PasswordHash, PasswordVerifier,
 };
 use async_graphql::{Enum, Object, ID};
 use base64::{encode_config, URL_SAFE};
@@ -11,7 +11,11 @@ use sqlx::{postgres::PgRow, PgPool, Row};
 use std::ops::Add;
 
 use crate::graphql::{
-    mail::sender::send_email_verification_code, mutations::user_mutation::RegisterUserInput,
+    mail::sender::send_email_verification_code,
+    mutations::user_mutation::{
+        LoginUserInput, LoginUserNotFoundError, LoginUserResult, LoginUserSuccess,
+        RegisterUserInput,
+    },
 };
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
