@@ -207,6 +207,8 @@ pub async fn is_already_exists_email(email: &str, pool: &PgPool) -> Result<bool>
     )
     .bind(email)
     .map(|row: PgRow| {
+        // query_asを使わない場合何を返却するかをmapで実装
+        // bigintはRustではi64を使用する
         let size: i64 = row.get("count");
         !matches!(size, 0)
     })
