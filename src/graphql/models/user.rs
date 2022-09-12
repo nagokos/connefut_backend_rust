@@ -161,6 +161,42 @@ pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
 }
 
 #[tracing::instrument(skip(email))]
+pub async fn get_user_from_email(pool: &PgPool, email: &str) -> Result<Option<User>> {
+    let user = sqlx::query_as::<_, User>(
+        r#"
+        SELECT *
+        FROM users
+        WHERE email = $1
+        "#,
+    )
+    .bind(email)
+    .fetch_optional(pool)
+    .await;
+
+    match user {
+        Ok(user) => Ok(user),
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+pub fn authentication(password: &[u8], password_hash: &str) -> Result<bool> {
+    let parsed_hash = match PasswordHash::new(password_hash) {
+        Ok(hash) => hash,
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            return Err(anyhow!(e));
+        }
+    };
+    let is_auth = Argon2::default()
+        .verify_password(password, &parsed_hash)
+        .is_ok();
+    Ok(is_auth)
+}
+
+#[tracing::instrument(skip(email))]
 pub async fn is_already_exists_email(email: &str, pool: &PgPool) -> Result<bool> {
     let is_exists = sqlx::query(
         r#"
