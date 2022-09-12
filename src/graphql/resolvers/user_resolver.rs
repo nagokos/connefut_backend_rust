@@ -71,6 +71,11 @@ impl UserMutation {
     #[allow(non_snake_case)]
     async fn loginUser(&self, ctx: &Context<'_>, input: LoginUserInput) -> Result<LoginUserResult> {
         let pool = get_db_pool(ctx).await?;
+
+        if let Some(errors) = input.login_user_validate() {
+            return Ok(errors.into());
+        }
+
         let user = match get_user_from_email(pool, &input.email).await? {
             Some(user) => user,
             None => {
