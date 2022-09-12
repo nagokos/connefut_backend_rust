@@ -1,17 +1,17 @@
 use anyhow::{anyhow, Result};
 use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
-    Argon2,
+    Argon2, PasswordHash, PasswordVerifier,
 };
 use async_graphql::{Enum, Object, ID};
 use base64::{encode_config, URL_SAFE};
-use chrono::Duration;
+use chrono::{DateTime, Duration, Local};
 use rand::Rng;
 use sqlx::{postgres::PgRow, PgPool, Row};
 use std::ops::Add;
 
-use crate::graphql::mutations::user_mutation::{
-    RegisterUserInput, RegisterUserResult, RegisterUserSuccess,
+use crate::graphql::{
+    mail::sender::send_email_verification_code, mutations::user_mutation::RegisterUserInput,
 };
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
@@ -40,6 +40,9 @@ pub struct User {
     pub role: UserRole,
     pub introduction: Option<String>,
     pub email_verification_status: EmailVerificationStatus,
+    pub email_verification_code: Option<String>,
+    pub email_verification_code_expires_at: Option<DateTime<Local>>,
+    pub password_digest: String,
 }
 
 #[Object]
@@ -82,8 +85,30 @@ impl Viewer {
     }
 }
 
+#[tracing::instrument]
+pub async fn get_user_from_id(pool: &PgPool, id: &str) -> Result<Option<User>> {
+    let user = sqlx::query_as::<_, User>(
+        r#"
+        SELECT *
+        FROM users
+        WHERE id = $1
+        "#,
+    )
+    .bind(id.parse::<i64>()?)
+    .fetch_optional(pool)
+    .await;
+
+    match user {
+        Ok(user) => Ok(user),
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
 #[tracing::instrument(skip(input))]
-pub async fn register_user(pool: &PgPool, input: &RegisterUserInput) -> Result<RegisterUserResult> {
+pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
     let sql = r#"
         INSERT INTO users
             (name, email, unverified_email, password_digest, email_verification_code,
@@ -93,8 +118,8 @@ pub async fn register_user(pool: &PgPool, input: &RegisterUserInput) -> Result<R
         RETURNING *
     "#;
 
-    let password_hash = generate_password_hash(input.password.as_bytes()).await?;
-    let email_verification_code = generate_email_verification_code().await;
+    let password_hash = generate_password_hash(input.password.as_bytes())?;
+    let email_verification_code = generate_email_verification_code();
     let now = chrono::Local::now();
     let expires_at = now.add(Duration::days(1));
 
@@ -114,11 +139,14 @@ pub async fn register_user(pool: &PgPool, input: &RegisterUserInput) -> Result<R
     match user {
         Ok(user) => {
             tracing::info!("Register user successed!!");
-            let viewer = Viewer {
-                account_user: user.into(),
-            };
-            let result = RegisterUserSuccess { viewer };
-            Ok(result.into())
+            match send_email_verification_code(&user).await {
+                Ok(_) => (),
+                Err(e) => {
+                    tracing::error!("{:?}", e);
+                    return Err(e);
+                }
+            }
+            Ok(user)
         }
         Err(e) => {
             tracing::error!("Register user failed.");
@@ -126,6 +154,42 @@ pub async fn register_user(pool: &PgPool, input: &RegisterUserInput) -> Result<R
             Err(e.into())
         }
     }
+}
+
+#[tracing::instrument(skip(email))]
+pub async fn get_user_from_email(pool: &PgPool, email: &str) -> Result<Option<User>> {
+    let user = sqlx::query_as::<_, User>(
+        r#"
+        SELECT *
+        FROM users
+        WHERE email = $1
+        "#,
+    )
+    .bind(email)
+    .fetch_optional(pool)
+    .await;
+
+    match user {
+        Ok(user) => Ok(user),
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+pub fn authentication(password: &[u8], password_hash: &str) -> Result<bool> {
+    let parsed_hash = match PasswordHash::new(password_hash) {
+        Ok(hash) => hash,
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            return Err(anyhow!(e));
+        }
+    };
+    let is_auth = Argon2::default()
+        .verify_password(password, &parsed_hash)
+        .is_ok();
+    Ok(is_auth)
 }
 
 #[tracing::instrument(skip(email))]
@@ -139,6 +203,8 @@ pub async fn is_already_exists_email(email: &str, pool: &PgPool) -> Result<bool>
     )
     .bind(email)
     .map(|row: PgRow| {
+        // query_asを使わない場合何を返却するかをmapで実装
+        // bigintはRustではi64を使用する
         let size: i64 = row.get("count");
         !matches!(size, 0)
     })
@@ -148,16 +214,16 @@ pub async fn is_already_exists_email(email: &str, pool: &PgPool) -> Result<bool>
     Ok(is_exists)
 }
 
-async fn generate_email_verification_code() -> String {
+fn generate_email_verification_code() -> String {
     let mut rng = rand::thread_rng();
     let mut code = String::from("");
-    for _i in 0..=6 {
+    for _i in 0..6 {
         code.push_str(&rng.gen_range(0..9).to_string());
     }
     code
 }
 
-async fn generate_password_hash(password: &[u8]) -> Result<String> {
+fn generate_password_hash(password: &[u8]) -> Result<String> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
     match argon2.hash_password(password, &salt) {

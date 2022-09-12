@@ -1,16 +1,23 @@
-use self::graphql::{GraphqlSchema, Mutation, Query};
 use async_graphql::{EmptySubscription, Schema};
 use async_graphql_axum::{GraphQLRequest, GraphQLResponse};
 use axum::{
-    http::{header, HeaderValue, Method},
+    http::{
+        header::{self, HeaderMap},
+        HeaderValue, Method,
+    },
     routing::post,
     Extension, Router, Server,
 };
+use sqlx::PgPool;
 use std::{sync::Arc, *};
+use tower_http::cors::CorsLayer;
 use tracing_subscriber::fmt::format::FmtSpan;
 
-use tower_http::cors::CorsLayer;
-
+use self::graphql::{GraphqlSchema, Mutation, Query};
+use crate::graphql::auth::{
+    cookie::{get_cookie_from_header, get_value_from_cookie},
+    jwt::get_user_from_token,
+};
 pub mod config;
 mod database;
 mod graphql;
@@ -18,8 +25,22 @@ mod graphql;
 use config::get_config;
 use database::pool;
 
-async fn graphql_handler(schema: Extension<GraphqlSchema>, req: GraphQLRequest) -> GraphQLResponse {
-    schema.execute(req.into_inner()).await.into()
+async fn graphql_handler(
+    Extension(schema): Extension<GraphqlSchema>,
+    req: GraphQLRequest,
+    headers: HeaderMap,
+    Extension(pool): Extension<Arc<PgPool>>,
+) -> GraphQLResponse {
+    let mut req = req.into_inner();
+    if let Some(cookie) = get_cookie_from_header(&headers) {
+        if let Some(token) = get_value_from_cookie(cookie, "token") {
+            let user = get_user_from_token(&pool, token).await;
+            // ctx.data::<Option<User>>でログインユーザにアクセスできる
+            req = req.data(user);
+        }
+    }
+
+    schema.execute(req).await.into()
 }
 
 #[tokio::main]
@@ -34,7 +55,8 @@ async fn main() {
         let pool = pool(config).await.unwrap();
         let arc_pool = Arc::new(pool);
         let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
-            .data(arc_pool)
+            .data(arc_pool.clone())
+            .data(config)
             .finish();
 
         let app = Router::new()
@@ -52,7 +74,8 @@ async fn main() {
                     .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
                     .allow_credentials(true),
             )
-            .layer(Extension(schema));
+            .layer(Extension(schema))
+            .layer(Extension(arc_pool));
 
         Server::bind(&"0.0.0.0:8080".parse().unwrap())
             .serve(app.into_make_service())

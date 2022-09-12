@@ -1,6 +1,9 @@
 use async_graphql::Interface;
 
-use self::user_mutation::{RegisterUserAlreadyExistsEmailError, RegisterUserInvalidInputError};
+use self::user_mutation::{
+    LoginUserAuthenticationError, LoginUserInvalidInputError, LoginUserNotFoundError,
+    RegisterUserAlreadyExistsEmailError, RegisterUserInvalidInputError,
+};
 
 pub mod user_mutation;
 
@@ -9,4 +12,7 @@ pub mod user_mutation;
 pub enum Error {
     RegisterUserAlreadyExistsEmailError(RegisterUserAlreadyExistsEmailError),
     RegisterUserInvalidInputError(RegisterUserInvalidInputError),
+    LoginUserInvalidInputError(LoginUserInvalidInputError),
+    LoginUserNotFoundError(LoginUserNotFoundError),
+    LoginUserAuthenticationError(LoginUserAuthenticationError),
 }

@@ -8,6 +8,8 @@ use self::resolvers::{
     RootQuery,
 };
 
+pub mod auth;
+pub mod mail;
 pub mod models;
 pub mod mutations;
 pub mod resolvers;

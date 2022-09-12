@@ -3,8 +3,15 @@ use async_graphql::{Context, Object, Result};
 use crate::{
     database::get_db_pool,
     graphql::{
-        models::user::{register_user, User, Viewer},
-        mutations::user_mutation::{RegisterUserInput, RegisterUserResult},
+        auth::{
+            get_viewer,
+            jwt::{self, Claims},
+        },
+        models::user::{self, authentication, get_user_from_email, Viewer},
+        mutations::user_mutation::{
+            LoginUserAuthenticationError, LoginUserInput, LoginUserNotFoundError, LoginUserResult,
+            LoginUserSuccess, RegisterUserInput, RegisterUserResult, RegisterUserSuccess,
+        },
     },
 };
 
@@ -14,25 +21,11 @@ pub struct UserQuery;
 #[Object]
 impl UserQuery {
     #[allow(non_snake_case)]
-    async fn viewer(&self, _ctx: &Context<'_>) -> Result<Viewer> {
-        let user = User {
-            id: 1,
-            name: String::from("kosuda"),
-            email: String::from("kosuda0428@gmail.com"),
-            unverified_email: Some(String::from("kosuda0428@gmail.com")),
-            avatar: String::from(
-                "https://abs.twimg.com/sticky/default_profile_images/default_profile.png",
-            ),
-            role: crate::graphql::models::user::UserRole::General,
-            introduction: None,
-            email_verification_status:
-                crate::graphql::models::user::EmailVerificationStatus::Pending,
-        };
-
+    async fn viewer(&self, ctx: &Context<'_>) -> Result<Viewer> {
+        let user = get_viewer(ctx).await;
         let viewer = Viewer {
-            account_user: Some(user),
+            account_user: { user.to_owned() },
         };
-
         Ok(viewer)
     }
 }
@@ -50,17 +43,75 @@ impl UserMutation {
     ) -> Result<RegisterUserResult> {
         let pool = get_db_pool(ctx).await?;
 
+        // todo if letでいいと思う
         match input.register_user_validate().await {
-            Some(errors) => return Ok(errors),
+            Some(errors) => return Ok(errors.into()),
             None => (),
         }
-
+        // todo if letでいいと思う
         match input.check_already_exists_email(pool).await? {
-            Some(error) => return Ok(error),
+            Some(error) => return Ok(error.into()),
             None => (),
         }
 
-        let result = register_user(pool, &input).await?;
-        Ok(result)
+        let user = user::create(pool, &input).await?;
+
+        let claims = Claims {
+            sub: user.id.to_string(),
+            ..Default::default()
+        };
+        match jwt::token_encode(claims) {
+            Ok(token) => {
+                jwt::set_jwt_cookie(token, ctx);
+                let viewer = Viewer {
+                    account_user: user.into(),
+                };
+                Ok(RegisterUserSuccess { viewer }.into())
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
+    #[allow(non_snake_case)]
+    async fn loginUser(&self, ctx: &Context<'_>, input: LoginUserInput) -> Result<LoginUserResult> {
+        let pool = get_db_pool(ctx).await?;
+        let user = match get_user_from_email(pool, &input.email).await? {
+            Some(user) => user,
+            None => {
+                let not_found = LoginUserNotFoundError {
+                    message: String::from("メールアドレス又はパスワードが正しくありません"),
+                };
+                tracing::error!("user not found");
+                return Ok(not_found.into());
+            }
+        };
+
+        match authentication(input.password.as_bytes(), &user.password_digest) {
+            Ok(is_auth) => {
+                if !is_auth {
+                    let auth_error = LoginUserAuthenticationError {
+                        message: String::from("メールアドレス、またはパスワードが正しくありません"),
+                    };
+                    tracing::error!("Failed to authenticate user");
+                    return Ok(auth_error.into());
+                }
+
+                let claims = Claims {
+                    sub: user.id.to_string(),
+                    ..Default::default()
+                };
+                match jwt::token_encode(claims) {
+                    Ok(token) => {
+                        jwt::set_jwt_cookie(token, ctx);
+                        let viewer = Viewer {
+                            account_user: user.into(),
+                        };
+                        tracing::info!("User authenticated.");
+                        Ok(LoginUserSuccess { viewer }.into())
+                    }
+                    Err(e) => Err(e.into()),
+                }
+            }
+            Err(e) => Err(e.into()),
+        }
     }
 }
