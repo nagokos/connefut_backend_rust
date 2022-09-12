@@ -36,6 +36,31 @@ pub fn token_encode(claims: Claims) -> Result<String> {
     Ok(token)
 }
 
+pub fn token_decode(token: String) -> Result<TokenData<Claims>> {
+    match decode::<Claims>(
+        &token,
+        &DecodingKey::from_secret("secret".as_ref()),
+        &Validation::default(),
+    ) {
+        Ok(c) => Ok(c),
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+// todo エラー返すようにする
+pub async fn get_user_from_token(pool: &PgPool, token: String) -> Option<User> {
+    match token_decode(token) {
+        Ok(token_data) => match get_user_from_id(pool, &token_data.claims.sub).await {
+            Ok(user) => user,
+            Err(_) => None,
+        },
+        Err(_) => None,
+    }
+}
+
 pub fn set_jwt_cookie(jwt: String, ctx: &Context<'_>) {
     let cookie = Cookie::build("token", jwt)
         .path("/")
