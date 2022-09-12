@@ -89,6 +89,28 @@ impl Viewer {
     }
 }
 
+#[tracing::instrument]
+pub async fn get_user_from_id(pool: &PgPool, id: &str) -> Result<Option<User>> {
+    let user = sqlx::query_as::<_, User>(
+        r#"
+        SELECT *
+        FROM users
+        WHERE id = $1
+        "#,
+    )
+    .bind(id.parse::<i64>()?)
+    .fetch_optional(pool)
+    .await;
+
+    match user {
+        Ok(user) => Ok(user),
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
 #[tracing::instrument(skip(input))]
 pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
     let sql = r#"
