@@ -55,8 +55,8 @@ impl RegisterUserInput {
                     .map(|(key, val)| {
                         let error = &val[0];
                         RegisterUserInvalidInputError {
-                            message: match &error.message {
-                                Some(message) => message.to_string(),
+                            message: match error.message {
+                                Some(ref message) => message.to_string(),
                                 None => String::from(""),
                             },
                             field: match *key {
