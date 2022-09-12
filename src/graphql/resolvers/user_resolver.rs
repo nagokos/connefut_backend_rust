@@ -60,7 +60,7 @@ impl UserMutation {
             sub: user.id.to_string(),
             ..Default::default()
         };
-        match jwt::decode(claims) {
+        match jwt::token_encode(claims) {
             Ok(token) => {
                 jwt::set_jwt_cookie(token, ctx);
                 let viewer = Viewer {
