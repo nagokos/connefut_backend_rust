@@ -21,25 +21,11 @@ pub struct UserQuery;
 #[Object]
 impl UserQuery {
     #[allow(non_snake_case)]
-    async fn viewer(&self, _ctx: &Context<'_>) -> Result<Viewer> {
-        let user = User {
-            id: 1,
-            name: String::from("kosuda"),
-            email: String::from("kosuda0428@gmail.com"),
-            unverified_email: Some(String::from("kosuda0428@gmail.com")),
-            avatar: String::from(
-                "https://abs.twimg.com/sticky/default_profile_images/default_profile.png",
-            ),
-            role: crate::graphql::models::user::UserRole::General,
-            introduction: None,
-            email_verification_status:
-                crate::graphql::models::user::EmailVerificationStatus::Pending,
-        };
-
+    async fn viewer(&self, ctx: &Context<'_>) -> Result<Viewer> {
+        let user = get_viewer(ctx).await;
         let viewer = Viewer {
-            account_user: Some(user),
+            account_user: { user.to_owned() },
         };
-
         Ok(viewer)
     }
 }
