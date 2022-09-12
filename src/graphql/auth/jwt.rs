@@ -4,8 +4,11 @@ use anyhow::Result;
 use async_graphql::Context;
 use chrono::{Duration, Local};
 use cookie::{time, Cookie, SameSite};
-use jsonwebtoken::{encode, EncodingKey, Header};
+use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, TokenData, Validation};
 use serde::{Deserialize, Serialize};
+use sqlx::PgPool;
+
+use crate::graphql::models::user::{get_user_from_id, User};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -24,7 +27,7 @@ impl Default for Claims {
     }
 }
 
-pub fn decode(claims: Claims) -> Result<String> {
+pub fn token_encode(claims: Claims) -> Result<String> {
     let token = encode(
         &Header::default(),
         &claims,
