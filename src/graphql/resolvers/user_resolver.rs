@@ -71,4 +71,47 @@ impl UserMutation {
             Err(e) => Err(e.into()),
         }
     }
+    #[allow(non_snake_case)]
+    async fn loginUser(&self, ctx: &Context<'_>, input: LoginUserInput) -> Result<LoginUserResult> {
+        let pool = get_db_pool(ctx).await?;
+        let user = match get_user_from_email(pool, &input.email).await? {
+            Some(user) => user,
+            None => {
+                let not_found = LoginUserNotFoundError {
+                    message: String::from("メールアドレス又はパスワードが正しくありません"),
+                };
+                tracing::error!("user not found");
+                return Ok(not_found.into());
+            }
+        };
+
+        match authentication(input.password.as_bytes(), &user.password_digest) {
+            Ok(is_auth) => {
+                if !is_auth {
+                    let auth_error = LoginUserAuthenticationError {
+                        message: String::from("メールアドレス、またはパスワードが正しくありません"),
+                    };
+                    tracing::error!("Failed to authenticate user");
+                    return Ok(auth_error.into());
+                }
+
+                let claims = Claims {
+                    sub: user.id.to_string(),
+                    ..Default::default()
+                };
+                match jwt::token_encode(claims) {
+                    Ok(token) => {
+                        jwt::set_jwt_cookie(token, ctx);
+                        let viewer = Viewer {
+                            account_user: user.into(),
+                        };
+                        tracing::info!("User authenticated.");
+                        Ok(LoginUserSuccess { viewer }.into())
+                    }
+                    Err(e) => Err(e.into()),
+                }
+            }
+            Err(e) => Err(e.into()),
+        }
+    }
 }
