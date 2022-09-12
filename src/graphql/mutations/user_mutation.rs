@@ -11,6 +11,18 @@ use crate::graphql::models::user::{is_already_exists_email, Viewer};
 static PASSWORD_FORMAT: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(?=.*?[a-zA-Z])(?=.*?\d)[a-zA-Z\d]{8,}$").unwrap());
 
+pub fn validate_password(password: &str) -> Result<(), ValidationError> {
+    match PASSWORD_FORMAT.is_match(password) {
+        Ok(bool) => {
+            if !bool {
+                return Err(ValidationError::new("Password format is incorrect"));
+            }
+            Ok(())
+        }
+        Err(_) => Err(ValidationError::new("regex is_match failed")),
+    }
+}
+
 //* RegisterUser */
 #[derive(InputObject, Debug, Deserialize, Validate)]
 pub struct RegisterUserInput {
