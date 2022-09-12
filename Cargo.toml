@@ -8,7 +8,7 @@ license = "MIT"
 
 [dependencies]
 #* framework
-axum = "0.5.15"
+axum = "0.5.16"
 hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
 tokio = {version = "1.20.1", features = ["full"]}
