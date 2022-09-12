@@ -74,7 +74,8 @@ async fn main() {
                     .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
                     .allow_credentials(true),
             )
-            .layer(Extension(schema));
+            .layer(Extension(schema))
+            .layer(Extension(arc_pool));
 
         Server::bind(&"0.0.0.0:8080".parse().unwrap())
             .serve(app.into_make_service())
