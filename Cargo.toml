@@ -18,7 +18,7 @@ reqwest = { version = "0.11.11", features = ["json"] }
 tower-http = { version = "0.3.4", features = ["cors"]}
 #* graphql
 async-graphql = {version = "4.0.11", features = ["chrono", "apollo_tracing"]}
-async-graphql-axum = "4.0.11"
+async-graphql-axum = "4.0.13"
 #*postgres
 sqlx = { version = "0.6.1", features = ["postgres", "runtime-tokio-rustls", "time", "chrono"]}
 #* time
