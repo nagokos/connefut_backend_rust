@@ -45,7 +45,7 @@ pub struct RegisterUserInput {
 }
 
 impl RegisterUserInput {
-    pub async fn register_user_validate(&self) -> Option<RegisterUserInvalidInputErrors> {
+    pub fn register_user_validate(&self) -> Option<RegisterUserInvalidInputErrors> {
         match self.validate() {
             Ok(_) => None,
             Err(e) => {
