@@ -221,7 +221,7 @@ pub async fn is_already_exists_email(email: &str, pool: &PgPool) -> Result<bool>
 fn generate_email_verification_code() -> String {
     let mut rng = rand::thread_rng();
     let mut code = String::from("");
-    for _i in 0..=6 {
+    for _i in 0..6 {
         code.push_str(&rng.gen_range(0..9).to_string());
     }
     code
