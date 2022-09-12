@@ -46,6 +46,7 @@ pub struct User {
     pub email_verification_status: EmailVerificationStatus,
     pub email_verification_code: Option<String>,
     pub email_verification_code_expires_at: Option<DateTime<Local>>,
+    pub password_digest: String,
 }
 
 #[Object]
