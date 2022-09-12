@@ -3,9 +3,15 @@ use async_graphql::{Context, Object, Result};
 use crate::{
     database::get_db_pool,
     graphql::{
-        auth::jwt::{self, Claims},
-        models::user::{self, User, Viewer},
-        mutations::user_mutation::{RegisterUserInput, RegisterUserResult, RegisterUserSuccess},
+        auth::{
+            get_viewer,
+            jwt::{self, Claims},
+        },
+        models::user::{self, authentication, get_user_from_email, Viewer},
+        mutations::user_mutation::{
+            LoginUserAuthenticationError, LoginUserInput, LoginUserNotFoundError, LoginUserResult,
+            LoginUserSuccess, RegisterUserInput, RegisterUserResult, RegisterUserSuccess,
+        },
     },
 };
 
