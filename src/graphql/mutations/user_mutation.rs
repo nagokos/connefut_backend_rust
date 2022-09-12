@@ -96,18 +96,6 @@ impl RegisterUserInput {
     }
 }
 
-pub fn validate_password(password: &str) -> Result<(), ValidationError> {
-    match PASSWORD_FORMAT.is_match(password) {
-        Ok(bool) => {
-            if !bool {
-                return Err(ValidationError::new("Password format is incorrect"));
-            }
-            Ok(())
-        }
-        Err(_) => Err(ValidationError::new("regex is_match failed")),
-    }
-}
-
 #[derive(Union)]
 #[allow(clippy::enum_variant_names)]
 pub enum RegisterUserResult {
