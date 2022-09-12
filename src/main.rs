@@ -55,7 +55,7 @@ async fn main() {
         let pool = pool(config).await.unwrap();
         let arc_pool = Arc::new(pool);
         let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
-            .data(arc_pool)
+            .data(arc_pool.clone())
             .data(config)
             .finish();
 
