@@ -131,3 +131,63 @@ pub enum RegisterUserInvalidInputField {
     Email,
     Password,
 }
+
+//* LoginUser */
+#[derive(InputObject, Debug, Deserialize, Validate)]
+pub struct LoginUserInput {
+    #[validate(
+        email(message = "メールアドレスを正しく入力してください"),
+        length(max = 100, message = "メールアドレスは100文字以内で入力してください")
+    )]
+    pub email: String,
+    #[graphql(secret)]
+    #[validate(
+        length(min = 8, message = "パスワードは8文字以上にしてください"),
+        custom(
+            function = "validate_password",
+            message = "パスワードを正しく入力してください"
+        )
+    )]
+    pub password: String,
+}
+
+#[derive(Union)]
+#[allow(clippy::enum_variant_names)]
+pub enum LoginUserResult {
+    LoginUserSuccess(LoginUserSuccess),
+    LoginUserInvalidInputErrors(LoginUserInvalidInputErrors),
+    LoginUserNotFoundError(LoginUserNotFoundError),
+    LoginUserAuthenticationError(LoginUserAuthenticationError),
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct LoginUserSuccess {
+    pub viewer: Viewer,
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct LoginUserNotFoundError {
+    pub message: String,
+}
+#[derive(SimpleObject, Debug)]
+pub struct LoginUserAuthenticationError {
+    pub message: String,
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct LoginUserInvalidInputErrors {
+    pub errors: Vec<LoginUserInvalidInputError>,
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct LoginUserInvalidInputError {
+    pub message: String,
+    pub field: LoginUserInvalidInputField,
+}
+
+#[derive(Enum, Clone, Copy, PartialEq, Eq, Debug)]
+pub enum LoginUserInvalidInputField {
+    Name,
+    Email,
+    Password,
+}
