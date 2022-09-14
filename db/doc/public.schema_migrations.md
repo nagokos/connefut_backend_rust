@@ -1,27 +1,27 @@
 # public.schema_migrations
 
-## Description
+## 概要
 
-## Columns
+## カラム一覧
 
-| Name | Type | Default | Nullable | Children | Parents | Comment |
-| ---- | ---- | ------- | -------- | -------- | ------- | ------- |
+| 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
+| ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
 | version | bigint |  | false |  |  |  |
 | dirty | boolean |  | false |  |  |  |
 
-## Constraints
+## 制約一覧
 
-| Name | Type | Definition |
+| 名前 | タイプ | 定義 |
 | ---- | ---- | ---------- |
 | schema_migrations_pkey | PRIMARY KEY | PRIMARY KEY (version) |
 
-## Indexes
+## INDEX一覧
 
-| Name | Definition |
+| 名前 | 定義 |
 | ---- | ---------- |
 | schema_migrations_pkey | CREATE UNIQUE INDEX schema_migrations_pkey ON public.schema_migrations USING btree (version) |
 
-## Relations
+## ER図
 
 ![er](public.schema_migrations.svg)
 
