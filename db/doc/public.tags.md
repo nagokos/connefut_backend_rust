@@ -1,31 +1,31 @@
 # public.tags
 
-## Description
+## 概要
 
-## Columns
+## カラム一覧
 
-| Name | Type | Default | Nullable | Children | Parents | Comment |
-| ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('tags_id_seq'::regclass) | false | [public.recruitment_tags](public.recruitment_tags.md) |  |  |
+| 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
+| ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
+| id | bigint | nextval('tags_id_seq'::regclass) | false |  |  |  |
 | name | varchar |  | false |  |  |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |
 
-## Constraints
+## 制約一覧
 
-| Name | Type | Definition |
+| 名前 | タイプ | 定義 |
 | ---- | ---- | ---------- |
 | tags_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | tags_name_key | UNIQUE | UNIQUE (name) |
 
-## Indexes
+## INDEX一覧
 
-| Name | Definition |
+| 名前 | 定義 |
 | ---- | ---------- |
 | tags_pkey | CREATE UNIQUE INDEX tags_pkey ON public.tags USING btree (id) |
 | tags_name_key | CREATE UNIQUE INDEX tags_name_key ON public.tags USING btree (name) |
 
-## Relations
+## ER図
 
 ![er](public.tags.svg)
 
