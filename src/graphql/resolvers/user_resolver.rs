@@ -43,15 +43,12 @@ impl UserMutation {
     ) -> Result<RegisterUserResult> {
         let pool = get_db_pool(ctx).await?;
 
-        // todo if letでいいと思う
-        match input.register_user_validate().await {
-            Some(errors) => return Ok(errors.into()),
-            None => (),
+        if let Some(errors) = input.register_user_validate() {
+            return Ok(errors.into());
         }
-        // todo if letでいいと思う
-        match input.check_already_exists_email(pool).await? {
-            Some(error) => return Ok(error.into()),
-            None => (),
+
+        if let Some(error) = input.check_already_exists_email(pool).await? {
+            return Ok(error.into());
         }
 
         let user = user::create(pool, &input).await?;
@@ -74,6 +71,11 @@ impl UserMutation {
     #[allow(non_snake_case)]
     async fn loginUser(&self, ctx: &Context<'_>, input: LoginUserInput) -> Result<LoginUserResult> {
         let pool = get_db_pool(ctx).await?;
+
+        if let Some(errors) = input.login_user_validate() {
+            return Ok(errors.into());
+        }
+
         let user = match get_user_from_email(pool, &input.email).await? {
             Some(user) => user,
             None => {

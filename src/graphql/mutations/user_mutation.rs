@@ -45,7 +45,7 @@ pub struct RegisterUserInput {
 }
 
 impl RegisterUserInput {
-    pub async fn register_user_validate(&self) -> Option<RegisterUserInvalidInputErrors> {
+    pub fn register_user_validate(&self) -> Option<RegisterUserInvalidInputErrors> {
         match self.validate() {
             Ok(_) => None,
             Err(e) => {
@@ -55,8 +55,8 @@ impl RegisterUserInput {
                     .map(|(key, val)| {
                         let error = &val[0];
                         RegisterUserInvalidInputError {
-                            message: match &error.message {
-                                Some(message) => message.to_string(),
+                            message: match error.message {
+                                Some(ref message) => message.to_string(),
                                 None => String::from(""),
                             },
                             field: match *key {
@@ -149,6 +149,35 @@ pub struct LoginUserInput {
         )
     )]
     pub password: String,
+}
+
+impl LoginUserInput {
+    pub fn login_user_validate(&self) -> Option<LoginUserInvalidInputErrors> {
+        match self.validate() {
+            Ok(_) => None,
+            Err(e) => {
+                let errors: Vec<LoginUserInvalidInputError> = e
+                    .field_errors()
+                    .iter()
+                    .map(|(key, val)| {
+                        let error = &val[0]; // fieldに対して複数エラーがあっても最初の一つだけ
+                        LoginUserInvalidInputError {
+                            message: match error.message {
+                                Some(ref message) => message.to_string(),
+                                None => String::from(""),
+                            },
+                            field: match *key {
+                                "email" => LoginUserInvalidInputField::Email,
+                                "password" => LoginUserInvalidInputField::Password,
+                                &_ => todo!(),
+                            },
+                        }
+                    })
+                    .collect();
+                Some(LoginUserInvalidInputErrors { errors })
+            }
+        }
+    }
 }
 
 #[derive(Union)]

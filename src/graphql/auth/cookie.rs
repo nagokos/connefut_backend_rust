@@ -14,7 +14,10 @@ pub fn get_cookie_from_header(headers: &HeaderMap) -> Option<Vec<&str>> {
     }
 }
 
-pub fn get_value_from_cookie(cookies: Vec<&str>, want_cookie_name: &str) -> Option<String> {
+// todo 複数取得できるようにする
+pub fn get_value_from_cookie(headers: &HeaderMap, want_cookie_name: &str) -> Option<String> {
+    let cookies = get_cookie_from_header(headers)?;
+
     for c in cookies {
         match Cookie::parse(c) {
             Ok(parsed_cookie) => {
