@@ -19,8 +19,8 @@ pub async fn send_email_verification_code(user: &User) -> Result<bool> {
             String::from("hello!"),
             include_str!("./template/email_verification_code.html").replace(
                 "{code}",
-                match &user.email_verification_code {
-                    Some(code) => code.as_str(),
+                match user.email_verification_code {
+                    Some(ref code) => code.as_str(),
                     None => return Err(anyhow!("Email address verification code is not set.")),
                 },
             ),

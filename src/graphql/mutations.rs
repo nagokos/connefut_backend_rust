@@ -5,6 +5,7 @@ use self::user_mutation::{
     RegisterUserAlreadyExistsEmailError, RegisterUserInvalidInputError,
 };
 
+pub mod recruitment_mutation;
 pub mod user_mutation;
 
 #[derive(Interface)]

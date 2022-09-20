@@ -2,7 +2,6 @@ use anyhow::Result;
 use async_graphql::{Enum, InputObject, SimpleObject, Union};
 use fancy_regex::Regex;
 use once_cell::sync::Lazy;
-use serde::Deserialize;
 use sqlx::PgPool;
 use validator::{Validate, ValidationError};
 
@@ -24,7 +23,7 @@ pub fn validate_password(password: &str) -> Result<(), ValidationError> {
 }
 
 //* RegisterUser */
-#[derive(InputObject, Debug, Deserialize, Validate)]
+#[derive(InputObject, Debug, Validate)]
 pub struct RegisterUserInput {
     #[validate(length(max = 50, message = "名前は50文字以内で入力してください"))]
     pub name: String,
@@ -133,7 +132,7 @@ pub enum RegisterUserInvalidInputField {
 }
 
 //* LoginUser */
-#[derive(InputObject, Debug, Deserialize, Validate)]
+#[derive(InputObject, Debug, Validate)]
 pub struct LoginUserInput {
     #[validate(
         email(message = "メールアドレスを正しく入力してください"),
