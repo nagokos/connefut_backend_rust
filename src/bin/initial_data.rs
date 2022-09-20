@@ -9,13 +9,14 @@ use tracing_subscriber::fmt::format::FmtSpan;
 
 #[derive(Deserialize, Debug)]
 #[allow(non_snake_case)]
-struct ResultItem {
-    prefName: String,
+struct Prefecture {
+    #[serde(rename = "prefName")]
+    name: String,
 }
 
 #[derive(Deserialize, Debug)]
-struct Result {
-    result: Vec<ResultItem>,
+struct Prefectures {
+    result: Vec<Prefecture>,
 }
 
 #[tokio::main]
@@ -42,9 +43,7 @@ async fn insert_initial_prefectures_data(pool: &PgPool) -> anyhow::Result<()> {
         QueryBuilder::new("INSERT INTO prefectures(name, created_at, updated_at)");
     builder.push_values(prefectures.result, |mut b, prefecture| {
         let now = Local::now();
-        b.push_bind(prefecture.prefName)
-            .push_bind(now)
-            .push_bind(now);
+        b.push_bind(prefecture.name).push_bind(now).push_bind(now);
     });
     builder.push("RETURNING id, name");
 
@@ -55,7 +54,7 @@ async fn insert_initial_prefectures_data(pool: &PgPool) -> anyhow::Result<()> {
 }
 
 #[tracing::instrument]
-async fn get_prefectures() -> anyhow::Result<Result> {
+async fn get_prefectures() -> anyhow::Result<Prefectures> {
     let client = reqwest::Client::builder().https_only(true).build()?;
 
     let mut headers = reqwest::header::HeaderMap::new();
@@ -70,8 +69,8 @@ async fn get_prefectures() -> anyhow::Result<Result> {
         .send()
         .await?;
     let body = resp.text().await?;
-    let json: Result = serde_json::from_str(&body)?;
-    Ok(json)
+    let prefectures = serde_json::from_str::<Prefectures>(&body)?;
+    Ok(prefectures)
 }
 
 #[tracing::instrument]
