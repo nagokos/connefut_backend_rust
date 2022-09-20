@@ -2,7 +2,6 @@ use anyhow::Result;
 use async_graphql::{Enum, InputObject, SimpleObject, Union};
 use fancy_regex::Regex;
 use once_cell::sync::Lazy;
-use serde::Deserialize;
 use sqlx::PgPool;
 use validator::{Validate, ValidationError};
 
@@ -24,7 +23,7 @@ pub fn validate_password(password: &str) -> Result<(), ValidationError> {
 }
 
 //* RegisterUser */
-#[derive(InputObject, Debug, Deserialize, Validate)]
+#[derive(InputObject, Debug, Validate)]
 pub struct RegisterUserInput {
     #[validate(length(max = 50, message = "名前は50文字以内で入力してください"))]
     pub name: String,
@@ -45,7 +44,7 @@ pub struct RegisterUserInput {
 }
 
 impl RegisterUserInput {
-    pub async fn register_user_validate(&self) -> Option<RegisterUserInvalidInputErrors> {
+    pub fn register_user_validate(&self) -> Option<RegisterUserInvalidInputErrors> {
         match self.validate() {
             Ok(_) => None,
             Err(e) => {
@@ -55,8 +54,8 @@ impl RegisterUserInput {
                     .map(|(key, val)| {
                         let error = &val[0];
                         RegisterUserInvalidInputError {
-                            message: match &error.message {
-                                Some(message) => message.to_string(),
+                            message: match error.message {
+                                Some(ref message) => message.to_string(),
                                 None => String::from(""),
                             },
                             field: match *key {
@@ -133,7 +132,7 @@ pub enum RegisterUserInvalidInputField {
 }
 
 //* LoginUser */
-#[derive(InputObject, Debug, Deserialize, Validate)]
+#[derive(InputObject, Debug, Validate)]
 pub struct LoginUserInput {
     #[validate(
         email(message = "メールアドレスを正しく入力してください"),
@@ -149,6 +148,35 @@ pub struct LoginUserInput {
         )
     )]
     pub password: String,
+}
+
+impl LoginUserInput {
+    pub fn login_user_validate(&self) -> Option<LoginUserInvalidInputErrors> {
+        match self.validate() {
+            Ok(_) => None,
+            Err(e) => {
+                let errors: Vec<LoginUserInvalidInputError> = e
+                    .field_errors()
+                    .iter()
+                    .map(|(key, val)| {
+                        let error = &val[0]; // fieldに対して複数エラーがあっても最初の一つだけ
+                        LoginUserInvalidInputError {
+                            message: match error.message {
+                                Some(ref message) => message.to_string(),
+                                None => String::from(""),
+                            },
+                            field: match *key {
+                                "email" => LoginUserInvalidInputField::Email,
+                                "password" => LoginUserInvalidInputField::Password,
+                                &_ => todo!(),
+                            },
+                        }
+                    })
+                    .collect();
+                Some(LoginUserInvalidInputErrors { errors })
+            }
+        }
+    }
 }
 
 #[derive(Union)]

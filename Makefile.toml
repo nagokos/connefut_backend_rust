@@ -54,7 +54,7 @@ args = [
 [tasks.tbls]
 command = "tbls"
 description = "データベースドキュメントを生成する"
-args = ["doc", "-f"]
+args = ["doc", "${POSTGRES_URL}", "db/doc", "-f"]
 
 [tasks.run]
 command = "cargo"

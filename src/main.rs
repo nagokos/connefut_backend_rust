@@ -14,10 +14,7 @@ use tower_http::cors::CorsLayer;
 use tracing_subscriber::fmt::format::FmtSpan;
 
 use self::graphql::{GraphqlSchema, Mutation, Query};
-use crate::graphql::auth::{
-    cookie::{get_cookie_from_header, get_value_from_cookie},
-    jwt::get_user_from_token,
-};
+use crate::graphql::auth::{cookie::get_value_from_cookie, jwt::get_user_from_token};
 pub mod config;
 mod database;
 mod graphql;
@@ -32,12 +29,10 @@ async fn graphql_handler(
     Extension(pool): Extension<Arc<PgPool>>,
 ) -> GraphQLResponse {
     let mut req = req.into_inner();
-    if let Some(cookie) = get_cookie_from_header(&headers) {
-        if let Some(token) = get_value_from_cookie(cookie, "token") {
-            let user = get_user_from_token(&pool, token).await;
-            // ctx.data::<Option<User>>でログインユーザにアクセスできる
-            req = req.data(user);
-        }
+    if let Some(token) = get_value_from_cookie(&headers, "token") {
+        let user = get_user_from_token(&pool, token).await;
+        // ctx.data::<Option<User>>でログインユーザにアクセスできる
+        req = req.data(user);
     }
 
     schema.execute(req).await.into()

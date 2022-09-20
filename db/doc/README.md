@@ -1,28 +1,16 @@
 # connefut_db
 
-## Tables
+## テーブル一覧
 
-| Name | Columns | Comment | Type |
+| 名前 | カラム一覧 | コメント | タイプ |
 | ---- | ------- | ------- | ---- |
 | [public.schema_migrations](public.schema_migrations.md) | 2 |  | BASE TABLE |
-| [public.prefectures](public.prefectures.md) | 4 |  | BASE TABLE |
-| [public.users](public.users.md) | 17 |  | BASE TABLE |
+| [public.users](public.users.md) | 16 |  | BASE TABLE |
 | [public.sports](public.sports.md) | 4 |  | BASE TABLE |
-| [public.recruitments](public.recruitments.md) | 16 |  | BASE TABLE |
-| [public.stocks](public.stocks.md) | 5 |  | BASE TABLE |
-| [public.applicants](public.applicants.md) | 6 |  | BASE TABLE |
+| [public.prefectures](public.prefectures.md) | 4 |  | BASE TABLE |
 | [public.tags](public.tags.md) | 4 |  | BASE TABLE |
-| [public.recruitment_tags](public.recruitment_tags.md) | 5 |  | BASE TABLE |
-| [public.rooms](public.rooms.md) | 3 |  | BASE TABLE |
-| [public.messages](public.messages.md) | 7 |  | BASE TABLE |
-| [public.entries](public.entries.md) | 5 |  | BASE TABLE |
-| [public.room_read_managements](public.room_read_managements.md) | 6 |  | BASE TABLE |
-| [public.relationships](public.relationships.md) | 5 |  | BASE TABLE |
-| [public.authentications](public.authentications.md) | 6 |  | BASE TABLE |
-| [public.user_activity_areas](public.user_activity_areas.md) | 5 |  | BASE TABLE |
-| [public.user_play_sports](public.user_play_sports.md) | 5 |  | BASE TABLE |
 
-## Relations
+## ER図
 
 ![er](schema.svg)
 

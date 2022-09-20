@@ -8,17 +8,18 @@ license = "MIT"
 
 [dependencies]
 #* framework
-axum = "0.5.15"
+axum = "0.5.16"
 hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
-tokio = {version = "1.20.1", features = ["full"]}
+tokio = {version = "1.21.1", features = ["full"]}
 #* http client
 reqwest = { version = "0.11.11", features = ["json"] }
 #* cors
 tower-http = { version = "0.3.4", features = ["cors"]}
 #* graphql
-async-graphql = {version = "4.0.13", features = ["chrono", "apollo_tracing"]}
-async-graphql-axum = "4.0.11"
+
+async-graphql = {version = "4.0.11", features = ["chrono", "apollo_tracing"]}
+async-graphql-axum = "4.0.13"
 #*postgres
 sqlx = { version = "0.6.1", features = ["postgres", "runtime-tokio-rustls", "time", "chrono"]}
 #* time
@@ -27,7 +28,7 @@ chrono =  {version = "0.4.22", default-features = false, features = ["clock", "s
 serde = { version = "1.0.144", features = ["derive"] }
 serde_json = "1.0.85"
 #* error
-anyhow = "1.0.62"
+anyhow = "1.0.65"
 #* custom error
 thiserror = "1.0.32"
 #* log
