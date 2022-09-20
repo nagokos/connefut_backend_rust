@@ -35,8 +35,7 @@ pub struct UserMutation;
 
 #[Object]
 impl UserMutation {
-    #[allow(non_snake_case)]
-    async fn registerUser(
+    async fn register_user(
         &self,
         ctx: &Context<'_>,
         input: RegisterUserInput,
@@ -68,8 +67,11 @@ impl UserMutation {
             Err(e) => Err(e.into()),
         }
     }
-    #[allow(non_snake_case)]
-    async fn loginUser(&self, ctx: &Context<'_>, input: LoginUserInput) -> Result<LoginUserResult> {
+    async fn login_user(
+        &self,
+        ctx: &Context<'_>,
+        input: LoginUserInput,
+    ) -> Result<LoginUserResult> {
         let pool = get_db_pool(ctx).await?;
 
         if let Some(errors) = input.login_user_validate() {
