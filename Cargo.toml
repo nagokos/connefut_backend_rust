@@ -11,7 +11,7 @@ license = "MIT"
 axum = "0.5.15"
 hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
-tokio = {version = "1.20.1", features = ["full"]}
+tokio = {version = "1.21.1", features = ["full"]}
 #* http client
 reqwest = { version = "0.11.11", features = ["json"] }
 #* cors
