@@ -54,18 +54,52 @@ impl Recruitment {
     }
 }
 
-#[derive(Enum, Clone, Copy, Eq, PartialEq, Debug)]
-pub enum Category {
-    Opponent,
-    Personal,
-    Member,
-    Join,
-    Other,
-}
+#[tracing::instrument]
+pub async fn create(pool: &PgPool, input: RecruitmentInput, user_id: i64) -> Result<Recruitment> {
+    let sql = r#"
+      INSERT INTO recruitments
+        (title, category, venue, venue_lat, venue_lng, start_at, closing_at, 
+            detail, sport_id, prefecture_id, status, user_id, published_at, created_at, updated_at)
+      VALUES
+        ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+      RETURNING *
+    "#;
 
-#[derive(Enum, Clone, Copy, Eq, PartialEq, Debug)]
-pub enum Status {
-    Draft,
-    Published,
-    Closed,
+    let now = Local::now();
+    let published_at = match input.status {
+        Status::Published => Some(now),
+        _ => None,
+    };
+
+    let row = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(input.title)
+        .bind(input.category)
+        .bind(input.venue)
+        .bind(input.venue_lat)
+        .bind(input.venue_lng)
+        .bind(input.start_at)
+        .bind(input.closing_at)
+        .bind(input.detail)
+        .bind(id_decode(&input.sport_id)?)
+        .bind(id_decode(&input.prefecture_id)?)
+        .bind(input.status)
+        .bind(user_id)
+        .bind(published_at)
+        .bind(now)
+        .bind(now)
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(recruitment) => {
+            if !input.tag_ids.is_empty() {
+                add_recruitment_tags(pool, input.tag_ids, recruitment.id).await?;
+            }
+            Ok(recruitment)
+        }
+        Err(e) => {
+            tracing::error!("{}", e.to_string());
+            Err(e.into())
+        }
+    }
 }
