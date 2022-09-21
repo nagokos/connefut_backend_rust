@@ -1,6 +1,10 @@
+use anyhow::{anyhow, Result};
 use async_graphql::{Object, ID};
 use base64::{encode_config, URL_SAFE};
-use sqlx::PgPool;
+use chrono::Local;
+use sqlx::{PgPool, Postgres, QueryBuilder};
+
+use crate::graphql::id_decode;
 
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct Tag {
@@ -15,6 +19,38 @@ impl Tag {
     }
     async fn name(&self) -> &str {
         &self.name
+    }
+}
+
+#[tracing::instrument]
+pub async fn add_recruitment_tags(
+    pool: &PgPool,
+    tag_ids: Vec<ID>,
+    recruitment_id: i64,
+) -> Result<()> {
+    let sql = "INSERT INTO recruitment_tags(tag_id, recruitment_id, created_at, updated_at) ";
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(sql.to_string());
+
+    query_builder.push_values(tag_ids, |mut b, id| {
+        let now = Local::now();
+        b.push_bind(id_decode(&id).ok())
+            .push_bind(recruitment_id)
+            .push_bind(now)
+            .push_bind(now);
+    });
+
+    let query = query_builder.build();
+
+    match query.execute(pool).await {
+        Ok(_) => {
+            tracing::info!("add recruitment tags successed!");
+            Ok(())
+        }
+        Err(e) => {
+            tracing::error!("add recruitment tags failed...");
+            tracing::error!("{}", e);
+            Err(e.into())
+        }
     }
 }
 
