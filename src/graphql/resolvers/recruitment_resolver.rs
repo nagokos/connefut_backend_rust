@@ -1,7 +1,14 @@
-use async_graphql::Object;
+use async_graphql::{Context, Object, Result};
 use base64::{encode_config, URL_SAFE};
 
-use crate::graphql::models::recruitment::Recruitment;
+use crate::{
+    database::get_db_pool,
+    graphql::{
+        auth::get_viewer,
+        models::recruitment::{self, Recruitment},
+        mutations::recruitment_mutation::RecruitmentInput,
+    },
+};
 
 use super::PageInfo;
 
@@ -39,5 +46,28 @@ impl RecruitmentEdge {
     }
     pub async fn node(&self) -> Recruitment {
         self.node.clone()
+    }
+}
+
+#[derive(Default)]
+pub struct RecruitmentMutation;
+
+#[Object]
+impl RecruitmentMutation {
+    async fn create_recruitment(
+        &self,
+        ctx: &Context<'_>,
+        input: RecruitmentInput,
+    ) -> Result<Recruitment> {
+        let pool = get_db_pool(ctx).await?;
+        let viewer = get_viewer(ctx).await;
+
+        match viewer {
+            Some(viewer) => match recruitment::create(pool, input, viewer.id).await {
+                Ok(recruitment) => Ok(recruitment),
+                Err(e) => Err(e.into()),
+            },
+            None => Err(async_graphql::Error::new("Please login")),
+        }
     }
 }
