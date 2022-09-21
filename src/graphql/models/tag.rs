@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Result};
+use anyhow::Result;
 use async_graphql::{Object, ID};
 use base64::{encode_config, URL_SAFE};
 use chrono::Local;
