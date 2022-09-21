@@ -31,11 +31,3 @@ pub fn id_decode(id: &ID) -> Result<i64> {
     let decoded_id: i64 = split_id[1].parse()?;
     Ok(decoded_id)
 }
-
-pub fn ids_decode(ids: &Vec<ID>) -> Result<Vec<i64>> {
-    let decoded_ids = ids
-        .iter()
-        .filter_map(|id| id_decode(id).ok())
-        .collect::<Vec<i64>>();
-    Ok(decoded_ids)
-}
