@@ -1,12 +1,16 @@
-use async_graphql::{Context, Object, Result};
+use async_graphql::{Context, Object, Result, ID};
 use base64::{encode_config, URL_SAFE};
 
 use crate::{
     database::get_db_pool,
     graphql::{
         auth::get_viewer,
+        id_decode,
         models::recruitment::{self, Recruitment},
-        mutations::recruitment_mutation::RecruitmentInput,
+        mutations::recruitment_mutation::{
+            CreateRecruitmentResult, CreateRecruitmentSuccess, RecruitmentInput,
+            UpdateRecruitmentResult, UpdateRecruitmentSuccess,
+        },
     },
 };
 
@@ -58,16 +62,39 @@ impl RecruitmentMutation {
         &self,
         ctx: &Context<'_>,
         input: RecruitmentInput,
-    ) -> Result<Recruitment> {
+    ) -> Result<CreateRecruitmentResult> {
         let pool = get_db_pool(ctx).await?;
-        let viewer = get_viewer(ctx).await;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Err(async_graphql::Error::new("Please login")),
+        };
 
-        match viewer {
-            Some(viewer) => match recruitment::create(pool, input, viewer.id).await {
-                Ok(recruitment) => Ok(recruitment),
-                Err(e) => Err(e.into()),
-            },
-            None => Err(async_graphql::Error::new("Please login")),
-        }
+        let recruitment = recruitment::create(pool, input, viewer.id).await?;
+        let recruitment_edge = RecruitmentEdge {
+            cursor: String::default(),
+            node: recruitment,
+        };
+        let success = CreateRecruitmentSuccess { recruitment_edge };
+        Ok(success.into())
+    }
+    async fn update_recruitment(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+        input: RecruitmentInput,
+    ) -> Result<UpdateRecruitmentResult> {
+        let pool = get_db_pool(ctx).await?;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Err(async_graphql::Error::new("Please login")),
+        };
+
+        let recruitment = recruitment::update(pool, input, id_decode(&id)?, viewer.id).await?;
+        let recruitment_edge = RecruitmentEdge {
+            cursor: String::default(),
+            node: recruitment,
+        };
+        let success = UpdateRecruitmentSuccess { recruitment_edge };
+        Ok(success.into())
     }
 }
