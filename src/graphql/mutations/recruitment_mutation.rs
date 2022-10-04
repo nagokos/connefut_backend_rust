@@ -2,7 +2,10 @@ use async_graphql::{Enum, InputObject, SimpleObject, Union, ID};
 use chrono::{DateTime, Local};
 use validator::Validate;
 
-use crate::graphql::models::recruitment::{Category, Recruitment, Status};
+use crate::graphql::{
+    models::recruitment::{Category, Status},
+    resolvers::recruitment_resolver::RecruitmentEdge,
+};
 
 #[derive(InputObject, Debug, Validate)]
 pub struct RecruitmentInput {
@@ -23,6 +26,7 @@ pub struct RecruitmentInput {
 }
 
 #[derive(Union)]
+#[allow(clippy::enum_variant_names)]
 pub enum CreateRecruitmentResult {
     CreateRecruitmentSuccess(CreateRecruitmentSuccess),
     CreateRecruitmentInvalidInputErrors(CreateRecruitmentInvalidInputErrors),
@@ -30,7 +34,7 @@ pub enum CreateRecruitmentResult {
 
 #[derive(SimpleObject, Debug)]
 pub struct CreateRecruitmentSuccess {
-    pub recruitment: Recruitment,
+    pub recruitment_edge: RecruitmentEdge,
 }
 
 #[derive(SimpleObject, Debug)]
