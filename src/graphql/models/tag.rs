@@ -175,3 +175,52 @@ pub async fn get_tags(pool: &PgPool) -> Result<Vec<Tag>> {
         }
     }
 }
+
+#[tracing::instrument]
+pub async fn get_recruitment_tags(pool: &PgPool, recruitment_id: i64) -> Result<Vec<Tag>> {
+    let sql = r#"
+      SELECT t.*
+      FROM tags as t
+      INNER JOIN recruitment_tags as r_t
+      ON t.id = r_t.tag_id
+      WHERE r_t.recruitment_id = $1
+    "#;
+
+    let rows = sqlx::query_as::<_, Tag>(sql)
+        .bind(recruitment_id)
+        .fetch_all(pool)
+        .await;
+
+    match rows {
+        Ok(tags) => {
+            tracing::info!("get recruitment tags successed!");
+            Ok(tags)
+        }
+        Err(e) => {
+            tracing::error!("get recruitment tags failed...");
+            tracing::error!("{}", e);
+            Err(e.into())
+        }
+    }
+}
+
+// todo tracing書く
+#[tracing::instrument]
+pub async fn is_already_exists_tag_name(pool: &PgPool, name: &str) -> Result<bool> {
+    let sql = r#"
+        SELECT COUNT(DISTINCT id)
+        FROM tags
+        WHERE name = $1
+    "#;
+
+    let is_exists = sqlx::query(sql)
+        .bind(name)
+        .map(|row: PgRow| {
+            let count: i64 = row.get("count");
+            !matches!(count, 0)
+        })
+        .fetch_one(pool)
+        .await?;
+
+    Ok(is_exists)
+}
