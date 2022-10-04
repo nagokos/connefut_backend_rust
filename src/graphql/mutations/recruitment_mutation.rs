@@ -48,6 +48,29 @@ pub struct CreateRecruitmentInvalidInputError {
     pub field: RecruitmentInvalidInputField,
 }
 
+#[derive(Union)]
+#[allow(clippy::enum_variant_names)]
+pub enum UpdateRecruitmentResult {
+    UpdateRecruitmentSuccess(UpdateRecruitmentSuccess),
+    UpdateRecruitmentInvalidInputErrors(UpdateRecruitmentInvalidInputErrors),
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct UpdateRecruitmentSuccess {
+    pub recruitment_edge: RecruitmentEdge,
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct UpdateRecruitmentInvalidInputErrors {
+    pub errors: Vec<UpdateRecruitmentInvalidInputError>,
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct UpdateRecruitmentInvalidInputError {
+    pub message: String,
+    pub field: RecruitmentInvalidInputField,
+}
+
 #[derive(Enum, Copy, Clone, Eq, PartialEq, Debug)]
 pub enum RecruitmentInvalidInputField {
     Title,
