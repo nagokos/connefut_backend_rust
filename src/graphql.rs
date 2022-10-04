@@ -6,7 +6,7 @@ use self::resolvers::{
     prefecture_resolver::PrefectureQuery,
     recruitment_resolver::RecruitmentMutation,
     sport_resolver::SportQuery,
-    tag_resolver::TagQuery,
+    tag_resolver::{TagMutation, TagQuery},
     user_resolver::{UserMutation, UserQuery},
     RootQuery,
 };
