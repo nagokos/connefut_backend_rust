@@ -142,16 +142,122 @@ pub async fn create(pool: &PgPool, input: RecruitmentInput, user_id: i64) -> Res
         .fetch_one(pool)
         .await;
 
-    match row {
+    let recruitment = match row {
+        Ok(recruitment) => recruitment,
+        Err(e) => {
+            tracing::error!("create recruitment failed...");
+            tracing::error!("{:?}", e.to_string());
+            return Err(e.into());
+        }
+    };
+
+    let decoded_tag_ids = input
+        .tag_ids
+        .iter()
+        .filter_map(|sent_tag| id_decode(sent_tag).ok())
+        .collect::<Vec<i64>>();
+    add_recruitment_tags(pool, decoded_tag_ids, recruitment.id).await?;
+    Ok(recruitment)
+}
+
+#[tracing::instrument]
+pub async fn update(
+    pool: &PgPool,
+    input: RecruitmentInput,
+    id: i64,
+    user_id: i64,
+) -> Result<Recruitment> {
+    let sql = r#"
+        UPDATE recruitments
+        SET title = $1, category = $2, venue = $3, venue_lat = $4, venue_lng = $5, start_at = $6,
+            closing_at = $7, detail = $8, sport_id = $9, prefecture_id = $10, status = $11, updated_at = $12,
+            published_at = CASE
+                               WHEN published_at IS NULL THEN $13
+                               ELSE published_at
+                           END
+        WHERE id = $14
+        AND user_id = $15
+        RETURNING *
+    "#;
+
+    let now = Local::now();
+    let published_at = match input.status {
+        Status::Published => Some(now),
+        _ => None,
+    };
+
+    let row = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(input.title)
+        .bind(input.category)
+        .bind(input.venue)
+        .bind(input.venue_lat)
+        .bind(input.venue_lng)
+        .bind(input.start_at)
+        .bind(input.closing_at)
+        .bind(input.detail)
+        .bind(id_decode(&input.sport_id)?)
+        .bind(id_decode(&input.prefecture_id)?)
+        .bind(input.status)
+        .bind(now)
+        .bind(published_at)
+        .bind(id)
+        .bind(user_id)
+        .fetch_one(pool)
+        .await;
+
+    let recruitment = match row {
         Ok(recruitment) => {
-            if !input.tag_ids.is_empty() {
-                add_recruitment_tags(pool, input.tag_ids, recruitment.id).await?;
-            }
-            Ok(recruitment)
+            tracing::info!("update recruitment successed!");
+            recruitment
         }
         Err(e) => {
-            tracing::error!("{}", e.to_string());
-            Err(e.into())
+            tracing::error!("update recruitment failed...");
+            tracing::error!("{:?}", e);
+            return Err(e.into());
         }
+    };
+
+    // ? タグを探す処理これでいいか考え直す
+    let current_tags = get_recruitment_tags(pool, recruitment.id).await?;
+    let decoded_sent_tag = input
+        .tag_ids
+        .iter()
+        .filter_map(|sent_tag| id_decode(sent_tag).ok());
+
+    let mut tx = pool.begin().await?;
+
+    let add_tags = decoded_sent_tag
+        .clone()
+        .into_iter()
+        .filter(|&sent_tag| {
+            !current_tags
+                .iter()
+                .any(|current_tag| sent_tag == current_tag.id)
+        })
+        .collect::<Vec<i64>>();
+    if let Err(e) = add_recruitment_tags_tx(&mut tx, add_tags, recruitment.id).await {
+        tracing::error!("add_recruitment_tags_tx failed rollback...");
+        tx.rollback().await?;
+        return Err(e);
     }
+
+    let remove_tags = current_tags
+        .iter()
+        .map(|current_tag| current_tag.id)
+        .filter(|&current_tag| {
+            !decoded_sent_tag
+                .clone()
+                .into_iter()
+                .any(|sent_tag| sent_tag == current_tag)
+        })
+        .collect::<Vec<i64>>();
+    if let Err(e) = remove_recruitment_tags_tx(&mut tx, remove_tags, recruitment.id).await {
+        tracing::error!("remove_recruitment_tags_tx failed rollback...");
+        tx.rollback().await?;
+        return Err(e);
+    }
+
+    tx.commit().await?;
+    tracing::info!("Transaction Commit!!");
+    Ok(recruitment)
 }
