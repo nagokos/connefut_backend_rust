@@ -1,12 +1,21 @@
 use anyhow::Result;
-use async_graphql::{Enum, Object, ID};
+use async_graphql::{Context, Enum, Object, ID};
 use base64::{encode_config, URL_SAFE};
 use chrono::{DateTime, Local};
 use sqlx::PgPool;
 
-use crate::graphql::{id_decode, mutations::recruitment_mutation::RecruitmentInput};
+use crate::{
+    database::get_db_pool,
+    graphql::{id_decode, mutations::recruitment_mutation::RecruitmentInput},
+};
 
-use super::tag::add_recruitment_tags;
+use super::{
+    tag::{
+        add_recruitment_tags, add_recruitment_tags_tx, get_recruitment_tags,
+        remove_recruitment_tags_tx, Tag,
+    },
+    user::{get_user_from_id, User},
+};
 
 #[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type)]
 #[sqlx(type_name = "recruitment_category")]
@@ -51,6 +60,49 @@ pub struct Recruitment {
 impl Recruitment {
     pub async fn id(&self) -> ID {
         encode_config(format!("Recruitment:{}", self.id), URL_SAFE).into()
+    }
+    pub async fn title(&self) -> &str {
+        &self.title
+    }
+    pub async fn category(&self) -> Category {
+        self.category
+    }
+    pub async fn venue(&self) -> Option<&str> {
+        self.venue.as_deref()
+    }
+    pub async fn venue_lat(&self) -> Option<f64> {
+        self.venue_lat
+    }
+    pub async fn venue_lng(&self) -> Option<f64> {
+        self.venue_lng
+    }
+    pub async fn start_at(&self) -> Option<DateTime<Local>> {
+        self.start_at
+    }
+    pub async fn closing_at(&self) -> Option<DateTime<Local>> {
+        self.closing_at
+    }
+    pub async fn detail(&self) -> Option<&str> {
+        self.detail.as_deref()
+    }
+    pub async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
+        let pool = get_db_pool(ctx).await?;
+        let user = get_user_from_id(pool, self.user_id).await?;
+        match user {
+            Some(u) => Ok(u),
+            None => Err(async_graphql::Error::new(String::from("User not found"))),
+        }
+    }
+    pub async fn created_at(&self) -> DateTime<Local> {
+        self.created_at
+    }
+    pub async fn status(&self) -> Status {
+        self.status
+    }
+    pub async fn tags(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Tag>> {
+        let pool = get_db_pool(ctx).await?;
+        let tags = get_recruitment_tags(pool, self.id).await?;
+        Ok(tags)
     }
 }
 
