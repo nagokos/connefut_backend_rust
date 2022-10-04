@@ -2,9 +2,7 @@ use anyhow::Result;
 use async_graphql::{Object, ID};
 use base64::{encode_config, URL_SAFE};
 use chrono::Local;
-use sqlx::{PgPool, Postgres, QueryBuilder};
-
-use crate::graphql::id_decode;
+use sqlx::{postgres::PgRow, PgPool, Postgres, QueryBuilder, Row, Transaction};
 
 #[derive(Clone, Debug, sqlx::FromRow)]
 pub struct Tag {
@@ -22,18 +20,24 @@ impl Tag {
     }
 }
 
+// todo poolとtransactionを両方受け取れるようにする
+
 #[tracing::instrument]
 pub async fn add_recruitment_tags(
     pool: &PgPool,
-    tag_ids: Vec<ID>,
+    tag_ids: Vec<i64>,
     recruitment_id: i64,
 ) -> Result<()> {
+    if tag_ids.is_empty() {
+        return Ok(());
+    }
+
     let sql = "INSERT INTO recruitment_tags(tag_id, recruitment_id, created_at, updated_at) ";
     let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(sql.to_string());
 
     query_builder.push_values(tag_ids, |mut b, id| {
         let now = Local::now();
-        b.push_bind(id_decode(&id).ok())
+        b.push_bind(id)
             .push_bind(recruitment_id)
             .push_bind(now)
             .push_bind(now);
