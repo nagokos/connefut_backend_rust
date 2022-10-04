@@ -20,7 +20,7 @@ pub mod resolvers;
 #[derive(MergedObject, Default)]
 pub struct Query(RootQuery, PrefectureQuery, SportQuery, TagQuery, UserQuery);
 #[derive(MergedObject, Default)]
-pub struct Mutation(UserMutation, RecruitmentMutation);
+pub struct Mutation(UserMutation, RecruitmentMutation, TagMutation);
 
 pub type GraphqlSchema = Schema<Query, Mutation, EmptySubscription>;
 
