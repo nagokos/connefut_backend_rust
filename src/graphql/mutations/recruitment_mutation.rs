@@ -1,6 +1,6 @@
 use async_graphql::{Enum, InputObject, SimpleObject, Union, ID};
 use chrono::{DateTime, Local};
-use validator::Validate;
+use validator::{Validate, ValidationError};
 
 use crate::graphql::{
     models::recruitment::{Category, Status},
