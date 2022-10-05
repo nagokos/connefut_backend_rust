@@ -108,9 +108,9 @@ dependencies = [
 
 [[package]]
 name = "async-graphql-axum"
-version = "4.0.13"
+version = "4.0.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e570fac7f38f293b491b028bb330f8cc2be9810187953ac2b9a814a5b0ddb805"
+checksum = "9574bdbbe7a95cd031d5117b0b1e1513c7935668aee7634d9cdfc4bdc8ff54a7"
 dependencies = [
  "async-graphql",
  "async-trait",
@@ -119,7 +119,6 @@ dependencies = [
  "futures-util",
  "http-body",
  "serde_json",
- "serde_urlencoded",
  "tokio-util",
  "tower-service",
 ]
