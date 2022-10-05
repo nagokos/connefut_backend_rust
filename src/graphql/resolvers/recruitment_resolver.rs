@@ -1,7 +1,18 @@
-use async_graphql::Object;
+use async_graphql::{Context, Object, Result, ID};
 use base64::{encode_config, URL_SAFE};
 
-use crate::graphql::models::recruitment::Recruitment;
+use crate::{
+    database::get_db_pool,
+    graphql::{
+        auth::get_viewer,
+        id_decode,
+        models::recruitment::{self, Recruitment},
+        mutations::recruitment_mutation::{
+            CreateRecruitmentResult, CreateRecruitmentSuccess, RecruitmentInput,
+            UpdateRecruitmentResult, UpdateRecruitmentSuccess,
+        },
+    },
+};
 
 use super::PageInfo;
 
@@ -39,5 +50,51 @@ impl RecruitmentEdge {
     }
     pub async fn node(&self) -> Recruitment {
         self.node.clone()
+    }
+}
+
+#[derive(Default)]
+pub struct RecruitmentMutation;
+
+#[Object]
+impl RecruitmentMutation {
+    async fn create_recruitment(
+        &self,
+        ctx: &Context<'_>,
+        input: RecruitmentInput,
+    ) -> Result<CreateRecruitmentResult> {
+        let pool = get_db_pool(ctx).await?;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Err(async_graphql::Error::new("Please login")),
+        };
+
+        let recruitment = recruitment::create(pool, input, viewer.id).await?;
+        let recruitment_edge = RecruitmentEdge {
+            cursor: String::default(),
+            node: recruitment,
+        };
+        let success = CreateRecruitmentSuccess { recruitment_edge };
+        Ok(success.into())
+    }
+    async fn update_recruitment(
+        &self,
+        ctx: &Context<'_>,
+        id: ID,
+        input: RecruitmentInput,
+    ) -> Result<UpdateRecruitmentResult> {
+        let pool = get_db_pool(ctx).await?;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Err(async_graphql::Error::new("Please login")),
+        };
+
+        let recruitment = recruitment::update(pool, input, id_decode(&id)?, viewer.id).await?;
+        let recruitment_edge = RecruitmentEdge {
+            cursor: String::default(),
+            node: recruitment,
+        };
+        let success = UpdateRecruitmentSuccess { recruitment_edge };
+        Ok(success.into())
     }
 }

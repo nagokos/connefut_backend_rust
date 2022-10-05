@@ -53,10 +53,12 @@ pub fn token_decode(token: String) -> Result<TokenData<Claims>> {
 // todo エラー返すようにする
 pub async fn get_user_from_token(pool: &PgPool, token: String) -> Option<User> {
     match token_decode(token) {
-        Ok(token_data) => match get_user_from_id(pool, &token_data.claims.sub).await {
-            Ok(user) => user,
-            Err(_) => None,
-        },
+        Ok(token_data) => {
+            match get_user_from_id(pool, token_data.claims.sub.parse::<i64>().unwrap()).await {
+                Ok(user) => user,
+                Err(_) => None,
+            }
+        }
         Err(_) => None,
     }
 }

@@ -1,11 +1,18 @@
 use async_graphql::Interface;
 
-use self::user_mutation::{
-    LoginUserAuthenticationError, LoginUserInvalidInputError, LoginUserNotFoundError,
-    RegisterUserAlreadyExistsEmailError, RegisterUserInvalidInputError,
+use self::{
+    recruitment_mutation::{
+        CreateRecruitmentInvalidInputError, UpdateRecruitmentInvalidInputError,
+    },
+    tag_mutation::CreateTagAlreadyExistsNameError,
+    user_mutation::{
+        LoginUserAuthenticationError, LoginUserInvalidInputError, LoginUserNotFoundError,
+        RegisterUserAlreadyExistsEmailError, RegisterUserInvalidInputError,
+    },
 };
 
 pub mod recruitment_mutation;
+pub mod tag_mutation;
 pub mod user_mutation;
 
 #[derive(Interface)]
@@ -17,4 +24,7 @@ pub enum Error {
     LoginUserInvalidInputError(LoginUserInvalidInputError),
     LoginUserNotFoundError(LoginUserNotFoundError),
     LoginUserAuthenticationError(LoginUserAuthenticationError),
+    CreateRecruitmentInvalidInputError(CreateRecruitmentInvalidInputError),
+    UpdateRecruitmentInvalidInputError(UpdateRecruitmentInvalidInputError),
+    CreateTagAlreadyExistsNameError(CreateTagAlreadyExistsNameError),
 }

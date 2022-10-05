@@ -86,7 +86,7 @@ impl Viewer {
 }
 
 #[tracing::instrument]
-pub async fn get_user_from_id(pool: &PgPool, id: &str) -> Result<Option<User>> {
+pub async fn get_user_from_id(pool: &PgPool, id: i64) -> Result<Option<User>> {
     let user = sqlx::query_as::<_, User>(
         r#"
         SELECT *
@@ -94,7 +94,7 @@ pub async fn get_user_from_id(pool: &PgPool, id: &str) -> Result<Option<User>> {
         WHERE id = $1
         "#,
     )
-    .bind(id.parse::<i64>()?)
+    .bind(id)
     .fetch_optional(pool)
     .await;
 
