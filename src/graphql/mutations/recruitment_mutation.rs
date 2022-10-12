@@ -26,7 +26,7 @@ pub struct RecruitmentInput {
 }
 
 #[derive(Union)]
-#[allow(clippy::enum_variant_names)]
+#[allow(clippy::enum_variant_names, clippy::large_enum_variant)]
 pub enum CreateRecruitmentResult {
     CreateRecruitmentSuccess(CreateRecruitmentSuccess),
     CreateRecruitmentInvalidInputErrors(CreateRecruitmentInvalidInputErrors),
@@ -49,7 +49,7 @@ pub struct CreateRecruitmentInvalidInputError {
 }
 
 #[derive(Union)]
-#[allow(clippy::enum_variant_names)]
+#[allow(clippy::enum_variant_names, clippy::large_enum_variant)]
 pub enum UpdateRecruitmentResult {
     UpdateRecruitmentSuccess(UpdateRecruitmentSuccess),
     UpdateRecruitmentInvalidInputErrors(UpdateRecruitmentInvalidInputErrors),
