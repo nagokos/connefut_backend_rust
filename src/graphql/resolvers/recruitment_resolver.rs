@@ -27,12 +27,7 @@ impl RecruitmentConnection {
         self.edges.clone()
     }
     pub async fn page_info(&self) -> PageInfo {
-        PageInfo {
-            start_cursor: None,
-            end_cursor: None,
-            has_next_page: true,
-            has_previous_page: true,
-        }
+        self.page_info.clone()
     }
 }
 
