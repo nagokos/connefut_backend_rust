@@ -6,7 +6,7 @@
 
 | 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
 | ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
-| id | bigint | nextval('prefectures_id_seq'::regclass) | false |  |  |  |
+| id | bigint | nextval('prefectures_id_seq'::regclass) | false | [public.recruitments](public.recruitments.md) |  |  |
 | name | varchar |  | false |  |  |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |

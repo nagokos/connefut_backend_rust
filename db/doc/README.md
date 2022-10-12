@@ -9,6 +9,8 @@
 | [public.sports](public.sports.md) | 4 |  | BASE TABLE |
 | [public.prefectures](public.prefectures.md) | 4 |  | BASE TABLE |
 | [public.tags](public.tags.md) | 4 |  | BASE TABLE |
+| [public.recruitments](public.recruitments.md) | 16 |  | BASE TABLE |
+| [public.recruitment_tags](public.recruitment_tags.md) | 5 |  | BASE TABLE |
 
 ## ER図
 
