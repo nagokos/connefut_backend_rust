@@ -2,11 +2,14 @@ use anyhow::Result;
 use async_graphql::{Context, Enum, Object, ID};
 use base64::{encode_config, URL_SAFE};
 use chrono::{DateTime, Local};
-use sqlx::PgPool;
+use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::{
     database::get_db_pool,
-    graphql::{id_decode, mutations::recruitment_mutation::RecruitmentInput},
+    graphql::{
+        id_decode, mutations::recruitment_mutation::RecruitmentInput,
+        utils::pagination::SearchParams,
+    },
 };
 
 use super::{
@@ -103,6 +106,78 @@ impl Recruitment {
         let pool = get_db_pool(ctx).await?;
         let tags = get_recruitment_tags(pool, self.id).await?;
         Ok(tags)
+    }
+}
+
+#[tracing::instrument]
+pub async fn get_recruitments(
+    pool: &PgPool,
+    search_params: SearchParams,
+) -> Result<Vec<Recruitment>> {
+    let sql = r#"
+        SELECT * 
+        FROM (
+            SELECT *
+            FROM recruitments
+            WHERE ($1 OR id < $2)
+            AND status = 'published'
+            ORDER BY id DESC
+            LIMIT $3
+        ) as r
+    "#;
+
+    let recruitments = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(!search_params.use_after)
+        .bind(search_params.after)
+        .bind(search_params.num_rows)
+        .fetch_all(pool)
+        .await;
+
+    match recruitments {
+        Ok(recruitments) => {
+            tracing::info!("get recruitments successed!!");
+            Ok(recruitments)
+        }
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            tracing::error!("get recruitments failed...");
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn is_next_recruitment(pool: &PgPool, id: i64) -> Result<bool> {
+    let sql = r#"
+        SELECT COUNT(DISTINCT r.id)
+        FROM (
+            SELECT id
+            FROM recruitments
+            WHERE id < $1
+            AND status = 'published'
+            ORDER BY id DESC
+            LIMIT 1
+        ) as r
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(id)
+        .map(|row: PgRow| {
+            let count = row.get::<i64, _>("count");
+            count.is_positive()
+        })
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(is_next) => {
+            tracing::info!("is next recruitment successed!!");
+            Ok(is_next)
+        }
+        Err(e) => {
+            tracing::error!("is next recruitment failed: {:?}", e);
+            Err(e.into())
+        }
     }
 }
 
