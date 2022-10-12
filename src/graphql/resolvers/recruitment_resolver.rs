@@ -31,7 +31,7 @@ impl RecruitmentConnection {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RecruitmentEdge {
     pub cursor: String,
     pub node: Recruitment,
@@ -44,6 +44,53 @@ impl RecruitmentEdge {
     }
     pub async fn node(&self) -> Recruitment {
         self.node.clone()
+    }
+}
+
+#[derive(Default)]
+pub struct RecruitmentQuery;
+
+#[Object]
+impl RecruitmentQuery {
+    async fn recruitments(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<ID>,
+        first: Option<i32>,
+    ) -> Result<RecruitmentConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let search_params = SearchParams::new(first, after)?;
+
+        let recruitments = get_recruitments(pool, search_params).await?;
+
+        let edges = if recruitments.is_empty() {
+            None
+        } else {
+            let edges = recruitments
+                .iter()
+                .map(|recruitment| RecruitmentEdge {
+                    cursor: String::default(),
+                    node: recruitment.to_owned(),
+                })
+                .collect::<Vec<RecruitmentEdge>>();
+            Some(edges)
+        };
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let is_next = is_next_recruitment(pool, recruitment.id).await?;
+                let encoded_id =
+                    encode_config(format!("Recruitment:{}", recruitment.id), base64::URL_SAFE);
+                PageInfo {
+                    has_next_page: is_next,
+                    end_cursor: Some(encoded_id),
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
+        Ok(RecruitmentConnection { page_info, edges })
     }
 }
 
