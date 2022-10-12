@@ -4,7 +4,7 @@ use base64::{decode_config, URL_SAFE};
 
 use self::resolvers::{
     prefecture_resolver::PrefectureQuery,
-    recruitment_resolver::RecruitmentMutation,
+    recruitment_resolver::{RecruitmentMutation, RecruitmentQuery},
     sport_resolver::SportQuery,
     tag_resolver::{TagMutation, TagQuery},
     user_resolver::{UserMutation, UserQuery},
@@ -16,9 +16,17 @@ pub mod mail;
 pub mod models;
 pub mod mutations;
 pub mod resolvers;
+pub mod utils;
 
 #[derive(MergedObject, Default)]
-pub struct Query(RootQuery, PrefectureQuery, SportQuery, TagQuery, UserQuery);
+pub struct Query(
+    RootQuery,
+    PrefectureQuery,
+    SportQuery,
+    TagQuery,
+    UserQuery,
+    RecruitmentQuery,
+);
 #[derive(MergedObject, Default)]
 pub struct Mutation(UserMutation, RecruitmentMutation, TagMutation);
 

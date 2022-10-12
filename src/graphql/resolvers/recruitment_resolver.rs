@@ -6,38 +6,32 @@ use crate::{
     graphql::{
         auth::get_viewer,
         id_decode,
-        models::recruitment::{self, Recruitment},
+        models::recruitment::{self, get_recruitments, is_next_recruitment, Recruitment},
         mutations::recruitment_mutation::{
             CreateRecruitmentResult, CreateRecruitmentSuccess, RecruitmentInput,
             UpdateRecruitmentResult, UpdateRecruitmentSuccess,
         },
+        utils::pagination::{PageInfo, SearchParams},
     },
 };
 
-use super::PageInfo;
-
 #[derive(Debug)]
 pub struct RecruitmentConnection {
-    pub edges: Option<Vec<Recruitment>>,
+    pub edges: Option<Vec<RecruitmentEdge>>,
     pub page_info: PageInfo,
 }
 
 #[Object]
 impl RecruitmentConnection {
-    pub async fn edges(&self) -> Option<Vec<Recruitment>> {
-        self.edges.to_owned()
+    pub async fn edges(&self) -> Option<Vec<RecruitmentEdge>> {
+        self.edges.clone()
     }
     pub async fn page_info(&self) -> PageInfo {
-        PageInfo {
-            start_cursor: None,
-            end_cursor: None,
-            has_next_page: true,
-            has_previous_page: true,
-        }
+        self.page_info.clone()
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct RecruitmentEdge {
     pub cursor: String,
     pub node: Recruitment,
@@ -50,6 +44,53 @@ impl RecruitmentEdge {
     }
     pub async fn node(&self) -> Recruitment {
         self.node.clone()
+    }
+}
+
+#[derive(Default)]
+pub struct RecruitmentQuery;
+
+#[Object]
+impl RecruitmentQuery {
+    async fn recruitments(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<ID>,
+        first: Option<i32>,
+    ) -> Result<RecruitmentConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let search_params = SearchParams::new(first, after)?;
+
+        let recruitments = get_recruitments(pool, search_params).await?;
+
+        let edges = if recruitments.is_empty() {
+            None
+        } else {
+            let edges = recruitments
+                .iter()
+                .map(|recruitment| RecruitmentEdge {
+                    cursor: String::default(),
+                    node: recruitment.to_owned(),
+                })
+                .collect::<Vec<RecruitmentEdge>>();
+            Some(edges)
+        };
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let is_next = is_next_recruitment(pool, recruitment.id).await?;
+                let encoded_id =
+                    encode_config(format!("Recruitment:{}", recruitment.id), base64::URL_SAFE);
+                PageInfo {
+                    has_next_page: is_next,
+                    end_cursor: Some(encoded_id),
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
+        Ok(RecruitmentConnection { page_info, edges })
     }
 }
 
