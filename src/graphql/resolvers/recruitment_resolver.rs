@@ -23,8 +23,8 @@ pub struct RecruitmentConnection {
 
 #[Object]
 impl RecruitmentConnection {
-    pub async fn edges(&self) -> Option<Vec<Recruitment>> {
-        self.edges.to_owned()
+    pub async fn edges(&self) -> Option<Vec<RecruitmentEdge>> {
+        self.edges.clone()
     }
     pub async fn page_info(&self) -> PageInfo {
         PageInfo {
