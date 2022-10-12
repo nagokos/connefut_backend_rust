@@ -11,8 +11,9 @@ use connefut_api::graphql::{
     resolvers::{
         recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
         tag_resolver::TagEdge,
-        Node, PageInfo,
+        Node,
     },
+    utils::pagination::PageInfo,
     Mutation, Query,
 };
 
