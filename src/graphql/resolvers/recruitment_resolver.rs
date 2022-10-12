@@ -6,19 +6,18 @@ use crate::{
     graphql::{
         auth::get_viewer,
         id_decode,
-        models::recruitment::{self, Recruitment},
+        models::recruitment::{self, get_recruitments, is_next_recruitment, Recruitment},
         mutations::recruitment_mutation::{
             CreateRecruitmentResult, CreateRecruitmentSuccess, RecruitmentInput,
             UpdateRecruitmentResult, UpdateRecruitmentSuccess,
         },
+        utils::pagination::{PageInfo, SearchParams},
     },
 };
 
-use super::PageInfo;
-
 #[derive(Debug)]
 pub struct RecruitmentConnection {
-    pub edges: Option<Vec<Recruitment>>,
+    pub edges: Option<Vec<RecruitmentEdge>>,
     pub page_info: PageInfo,
 }
 
