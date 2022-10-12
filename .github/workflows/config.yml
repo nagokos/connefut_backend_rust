@@ -37,7 +37,7 @@ jobs:
         with:
           profile: minimal
           toolchain: stable
-          conponents: clippy, rustfmt
+          components: clippy, rustfmt
       - name: rust lint
         run: |
           cargo fmt --all -- --check
