@@ -253,26 +253,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "axum-extra"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "69034b3b0fd97923eee2ce8a47540edb21e07f48f87f67d44bb4271cec622bdb"
-dependencies = [
- "axum",
- "bytes",
- "cookie",
- "futures-util",
- "http",
- "mime",
- "pin-project-lite",
- "tokio",
- "tower",
- "tower-http",
- "tower-layer",
- "tower-service",
-]
-
-[[package]]
 name = "base64"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -388,7 +368,6 @@ dependencies = [
  "async-graphql",
  "async-graphql-axum",
  "axum",
- "axum-extra",
  "base64",
  "chrono",
  "cookie",
@@ -420,7 +399,6 @@ version = "0.16.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "344adc371239ef32293cb1c4fe519592fcf21206c79c02854320afcdf3ab4917"
 dependencies = [
- "percent-encoding",
  "time",
  "version_check",
 ]
