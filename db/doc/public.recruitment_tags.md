@@ -1,36 +1,36 @@
 # public.recruitment_tags
 
-## Description
+## 概要
 
-## Columns
+## カラム一覧
 
-| Name | Type | Default | Nullable | Children | Parents | Comment |
-| ---- | ---- | ------- | -------- | -------- | ------- | ------- |
+| 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
+| ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
 | id | bigint | nextval('recruitment_tags_id_seq'::regclass) | false |  |  |  |
-| recruitment_id | bigint |  | false |  | [public.recruitments](public.recruitments.md) |  |
 | tag_id | bigint |  | false |  | [public.tags](public.tags.md) |  |
+| recruitment_id | bigint |  | false |  | [public.recruitments](public.recruitments.md) |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |
 
-## Constraints
+## 制約一覧
 
-| Name | Type | Definition |
+| 名前 | タイプ | 定義 |
 | ---- | ---- | ---------- |
-| recruitment_tags_recruitment_id_fkey | FOREIGN KEY | FOREIGN KEY (recruitment_id) REFERENCES recruitments(id) ON DELETE CASCADE |
 | recruitment_tags_tag_id_fkey | FOREIGN KEY | FOREIGN KEY (tag_id) REFERENCES tags(id) ON DELETE CASCADE |
+| recruitment_tags_recruitment_id_fkey | FOREIGN KEY | FOREIGN KEY (recruitment_id) REFERENCES recruitments(id) ON DELETE CASCADE |
 | recruitment_tags_pkey | PRIMARY KEY | PRIMARY KEY (id) |
-| recruitment_tags_recruitment_id_tag_id_key | UNIQUE | UNIQUE (recruitment_id, tag_id) |
+| recruitment_tags_tag_id_recruitment_id_key | UNIQUE | UNIQUE (tag_id, recruitment_id) |
 
-## Indexes
+## INDEX一覧
 
-| Name | Definition |
+| 名前 | 定義 |
 | ---- | ---------- |
 | recruitment_tags_pkey | CREATE UNIQUE INDEX recruitment_tags_pkey ON public.recruitment_tags USING btree (id) |
-| recruitment_tags_recruitment_id_tag_id_key | CREATE UNIQUE INDEX recruitment_tags_recruitment_id_tag_id_key ON public.recruitment_tags USING btree (recruitment_id, tag_id) |
+| recruitment_tags_tag_id_recruitment_id_key | CREATE UNIQUE INDEX recruitment_tags_tag_id_recruitment_id_key ON public.recruitment_tags USING btree (tag_id, recruitment_id) |
 | recruitment_tags_tag_id_idx | CREATE INDEX recruitment_tags_tag_id_idx ON public.recruitment_tags USING btree (tag_id) |
 | recruitment_tags_recruitment_id_idx | CREATE INDEX recruitment_tags_recruitment_id_idx ON public.recruitment_tags USING btree (recruitment_id) |
 
-## Relations
+## ER図
 
 ![er](public.recruitment_tags.svg)
 

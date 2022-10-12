@@ -6,7 +6,7 @@
 
 | 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
 | ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
-| id | bigint | nextval('users_id_seq'::regclass) | false |  |  |  |
+| id | bigint | nextval('users_id_seq'::regclass) | false | [public.recruitments](public.recruitments.md) |  |  |
 | name | varchar(50) |  | false |  |  |  |
 | email | varchar(100) |  | false |  |  |  |
 | unverified_email | varchar(100) |  | true |  |  |  |

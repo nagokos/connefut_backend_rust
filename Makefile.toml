@@ -76,3 +76,8 @@ args = ["run", "--bin", "write_schema"]
 command = "cargo"
 description = "初期データの生成"
 args = ["run", "--bin", "initial_data"]
+
+[tasks.create_test_data]
+command = "cargo"
+description = "テストデータを作成する"
+args = ["run", "--bin", "test_data"]

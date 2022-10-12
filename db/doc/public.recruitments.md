@@ -1,47 +1,47 @@
 # public.recruitments
 
-## Description
+## 概要
 
-## Columns
+## カラム一覧
 
-| Name | Type | Default | Nullable | Children | Parents | Comment |
-| ---- | ---- | ------- | -------- | -------- | ------- | ------- |
-| id | bigint | nextval('recruitments_id_seq'::regclass) | false | [public.stocks](public.stocks.md) [public.applicants](public.applicants.md) [public.recruitment_tags](public.recruitment_tags.md) |  |  |
+| 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
+| ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
+| id | bigint | nextval('recruitments_id_seq'::regclass) | false | [public.recruitment_tags](public.recruitment_tags.md) |  |  |
 | title | varchar(60) |  | false |  |  |  |
-| type | varchar |  | false |  |  |  |
+| category | recruitment_category | 'opponent'::recruitment_category | false |  |  |  |
 | venue | varchar |  | true |  |  |  |
+| venue_lat | double precision |  | true |  |  |  |
+| venue_lng | double precision |  | true |  |  |  |
 | start_at | timestamp with time zone |  | true |  |  |  |
-| detail | varchar(10000) |  | true |  |  |  |
 | closing_at | timestamp with time zone |  | true |  |  |  |
-| prefecture_id | bigint |  | false |  | [public.prefectures](public.prefectures.md) |  |
+| detail | varchar(10000) |  | true |  |  |  |
+| sport_id | bigint |  | false |  | [public.sports](public.sports.md) |  |
+| prefecture_id | bigint |  | true |  | [public.prefectures](public.prefectures.md) |  |
+| status | recruitment_status | 'draft'::recruitment_status | false |  |  |  |
 | user_id | bigint |  | false |  | [public.users](public.users.md) |  |
+| published_at | timestamp with time zone |  | true |  |  |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |
-| location_lat | double precision |  | true |  |  |  |
-| location_lng | double precision |  | true |  |  |  |
-| status | recruitment_status | 'draft'::recruitment_status | false |  |  |  |
-| published_at | timestamp with time zone |  | true |  |  |  |
-| sport_id | bigint |  | false |  | [public.sports](public.sports.md) |  |
 
-## Constraints
+## 制約一覧
 
-| Name | Type | Definition |
+| 名前 | タイプ | 定義 |
 | ---- | ---- | ---------- |
-| recruitments_prefecture_id_fkey | FOREIGN KEY | FOREIGN KEY (prefecture_id) REFERENCES prefectures(id) ON DELETE RESTRICT |
 | recruitments_user_id_fkey | FOREIGN KEY | FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE |
 | recruitments_sport_id_fkey | FOREIGN KEY | FOREIGN KEY (sport_id) REFERENCES sports(id) ON DELETE RESTRICT |
+| recruitments_prefecture_id_fkey | FOREIGN KEY | FOREIGN KEY (prefecture_id) REFERENCES prefectures(id) ON DELETE RESTRICT |
 | recruitments_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 
-## Indexes
+## INDEX一覧
 
-| Name | Definition |
+| 名前 | 定義 |
 | ---- | ---------- |
 | recruitments_pkey | CREATE UNIQUE INDEX recruitments_pkey ON public.recruitments USING btree (id) |
 | recruitments_user_id_idx | CREATE INDEX recruitments_user_id_idx ON public.recruitments USING btree (user_id) |
 | recruitments_prefecture_id_idx | CREATE INDEX recruitments_prefecture_id_idx ON public.recruitments USING btree (prefecture_id) |
 | recruitments_sport_id_idx | CREATE INDEX recruitments_sport_id_idx ON public.recruitments USING btree (sport_id) |
 
-## Relations
+## ER図
 
 ![er](public.recruitments.svg)
 
