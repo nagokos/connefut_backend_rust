@@ -293,21 +293,23 @@ pub async fn update(
     };
 
     // ? タグを探す処理これでいいか考え直す
-    let current_tags = get_recruitment_tags(pool, recruitment.id).await?;
+    let current_tags = get_recruitment_tags(pool, recruitment.id).await?; // 募集に不要されているタグを全て取得
     let decoded_sent_tag = input
         .tag_ids
         .iter()
         .filter_map(|sent_tag| id_decode(sent_tag).ok());
 
+    // タグの付与と削除で整合性を保つためにトランザクション
     let mut tx = pool.begin().await?;
 
+    // 送られてきたタグを起点に現在付与されているタグと比較して付与するタグを取得
     let add_tags = decoded_sent_tag
         .clone()
         .into_iter()
         .filter(|&sent_tag| {
             !current_tags
                 .iter()
-                .any(|current_tag| sent_tag == current_tag.id)
+                .any(|current_tag| sent_tag == current_tag.id) // anyは一つでも一致すればtrueを返すため!current_tagsにする
         })
         .collect::<Vec<i64>>();
     if let Err(e) = add_recruitment_tags_tx(&mut tx, add_tags, recruitment.id).await {
@@ -316,6 +318,7 @@ pub async fn update(
         return Err(e);
     }
 
+    // 現在付与されているタグを起点に送られてきたタグと比較して削除するタグを取得
     let remove_tags = current_tags
         .iter()
         .map(|current_tag| current_tag.id)
@@ -332,6 +335,7 @@ pub async fn update(
         return Err(e);
     }
 
+    // タグの付与、削除に成功したらコミットする
     tx.commit().await?;
     tracing::info!("Transaction Commit!!");
     Ok(recruitment)
