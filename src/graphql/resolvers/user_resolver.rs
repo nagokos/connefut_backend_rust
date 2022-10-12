@@ -20,7 +20,6 @@ pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
-    #[allow(non_snake_case)]
     async fn viewer(&self, ctx: &Context<'_>) -> Result<Viewer> {
         let user = get_viewer(ctx).await;
         let viewer = Viewer {

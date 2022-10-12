@@ -19,7 +19,7 @@ impl SearchParams {
                 after: 0,
                 num_rows: first,
             };
-            return Ok(search_params);
+            Ok(search_params)
         } else if let (Some(first), Some(after)) = (first, after.as_ref()) {
             if after.is_empty() {
                 return Err(anyhow::anyhow!("afterが正しくありません"));
@@ -29,13 +29,13 @@ impl SearchParams {
                 after: id_decode(after)? as i32,
                 num_rows: first,
             };
-            return Ok(search_params);
+            Ok(search_params)
         } else {
             tracing::error!("search params validation error");
-            return Err(anyhow::anyhow!(
+            Err(anyhow::anyhow!(
                 "[first], [first, after] のいずれかの組み合わせで指定してください"
-            ));
-        };
+            ))
+        }
     }
 }
 

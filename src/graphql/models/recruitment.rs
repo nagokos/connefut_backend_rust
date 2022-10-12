@@ -2,11 +2,14 @@ use anyhow::Result;
 use async_graphql::{Context, Enum, Object, ID};
 use base64::{encode_config, URL_SAFE};
 use chrono::{DateTime, Local};
-use sqlx::PgPool;
+use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::{
     database::get_db_pool,
-    graphql::{id_decode, mutations::recruitment_mutation::RecruitmentInput},
+    graphql::{
+        id_decode, mutations::recruitment_mutation::RecruitmentInput,
+        utils::pagination::SearchParams,
+    },
 };
 
 use super::{
@@ -103,6 +106,78 @@ impl Recruitment {
         let pool = get_db_pool(ctx).await?;
         let tags = get_recruitment_tags(pool, self.id).await?;
         Ok(tags)
+    }
+}
+
+#[tracing::instrument]
+pub async fn get_recruitments(
+    pool: &PgPool,
+    search_params: SearchParams,
+) -> Result<Vec<Recruitment>> {
+    let sql = r#"
+        SELECT * 
+        FROM (
+            SELECT *
+            FROM recruitments
+            WHERE ($1 OR id < $2)
+            AND status = 'published'
+            ORDER BY id DESC
+            LIMIT $3
+        ) as r
+    "#;
+
+    let recruitments = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(!search_params.use_after)
+        .bind(search_params.after)
+        .bind(search_params.num_rows)
+        .fetch_all(pool)
+        .await;
+
+    match recruitments {
+        Ok(recruitments) => {
+            tracing::info!("get recruitments successed!!");
+            Ok(recruitments)
+        }
+        Err(e) => {
+            tracing::error!("{:?}", e);
+            tracing::error!("get recruitments failed...");
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn is_next_recruitment(pool: &PgPool, id: i64) -> Result<bool> {
+    let sql = r#"
+        SELECT COUNT(DISTINCT r.id)
+        FROM (
+            SELECT id
+            FROM recruitments
+            WHERE id < $1
+            AND status = 'published'
+            ORDER BY id DESC
+            LIMIT 1
+        ) as r
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(id)
+        .map(|row: PgRow| {
+            let count = row.get::<i64, _>("count");
+            count.is_positive()
+        })
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(is_next) => {
+            tracing::info!("is next recruitment successed!!");
+            Ok(is_next)
+        }
+        Err(e) => {
+            tracing::error!("is next recruitment failed: {:?}", e);
+            Err(e.into())
+        }
     }
 }
 
@@ -218,21 +293,23 @@ pub async fn update(
     };
 
     // ? タグを探す処理これでいいか考え直す
-    let current_tags = get_recruitment_tags(pool, recruitment.id).await?;
+    let current_tags = get_recruitment_tags(pool, recruitment.id).await?; // 募集に不要されているタグを全て取得
     let decoded_sent_tag = input
         .tag_ids
         .iter()
         .filter_map(|sent_tag| id_decode(sent_tag).ok());
 
+    // タグの付与と削除で整合性を保つためにトランザクション
     let mut tx = pool.begin().await?;
 
+    // 送られてきたタグを起点に現在付与されているタグと比較して付与するタグを取得
     let add_tags = decoded_sent_tag
         .clone()
         .into_iter()
         .filter(|&sent_tag| {
             !current_tags
                 .iter()
-                .any(|current_tag| sent_tag == current_tag.id)
+                .any(|current_tag| sent_tag == current_tag.id) // anyは一つでも一致すればtrueを返すため!current_tagsにする
         })
         .collect::<Vec<i64>>();
     if let Err(e) = add_recruitment_tags_tx(&mut tx, add_tags, recruitment.id).await {
@@ -241,6 +318,7 @@ pub async fn update(
         return Err(e);
     }
 
+    // 現在付与されているタグを起点に送られてきたタグと比較して削除するタグを取得
     let remove_tags = current_tags
         .iter()
         .map(|current_tag| current_tag.id)
@@ -257,6 +335,7 @@ pub async fn update(
         return Err(e);
     }
 
+    // タグの付与、削除に成功したらコミットする
     tx.commit().await?;
     tracing::info!("Transaction Commit!!");
     Ok(recruitment)

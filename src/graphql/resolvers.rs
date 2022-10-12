@@ -21,30 +21,6 @@ pub enum Node {
     Recruitment(Recruitment),
 }
 
-#[derive(Debug)]
-pub struct PageInfo {
-    pub start_cursor: Option<String>,
-    pub end_cursor: Option<String>,
-    pub has_next_page: bool,
-    pub has_previous_page: bool,
-}
-
-#[Object]
-impl PageInfo {
-    async fn start_cursor(&self) -> Option<&str> {
-        self.start_cursor.as_deref()
-    }
-    async fn end_cursor(&self) -> Option<&str> {
-        self.end_cursor.as_deref()
-    }
-    async fn has_next_page(&self) -> bool {
-        self.has_next_page
-    }
-    async fn has_previous_page(&self) -> bool {
-        self.has_previous_page
-    }
-}
-
 #[derive(Default)]
 pub struct RootQuery;
 
