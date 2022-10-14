@@ -20,7 +20,7 @@ pub async fn pool(config: &Config) -> Result<PgPool> {
     }
 }
 
-pub async fn get_db_pool<'ctx>(ctx: &Context<'ctx>) -> anyhow::Result<&'ctx Arc<PgPool>> {
+pub async fn get_db_pool<'ctx>(ctx: &Context<'ctx>) -> Result<&'ctx Arc<PgPool>> {
     match ctx.data::<Arc<PgPool>>() {
         Ok(pool) => Ok(pool),
         Err(e) => {
