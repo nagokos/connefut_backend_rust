@@ -143,26 +143,35 @@ pub async fn get_recruitments(
     }
 }
 
+//#[tracing::instrument]
+//pub async fn get_viewer_recruitments(
+//    pool: &PgPool,
+//    search_params: SearchParams,
+//) -> Result<Vec<Recruitment>> {
+//    let sql = r#"
+//        SELECT *
+//        FROM (
+
+//        )
+//    "#;
+//}
+
 #[tracing::instrument]
 pub async fn is_next_recruitment(pool: &PgPool, id: i64) -> Result<bool> {
     let sql = r#"
-        SELECT COUNT(DISTINCT r.id)
-        FROM (
+        SELECT EXISTS (
             SELECT id
             FROM recruitments
             WHERE id < $1
             AND status = 'published'
             ORDER BY id DESC
             LIMIT 1
-        ) as r
+        )
     "#;
 
     let row = sqlx::query(sql)
         .bind(id)
-        .map(|row: PgRow| {
-            let count = row.get::<i64, _>("count");
-            count.is_positive()
-        })
+        .map(|row: PgRow| row.get::<bool, _>(0)) // SELECT EXISTSで true or falseのどちらかが返る
         .fetch_one(pool)
         .await;
 

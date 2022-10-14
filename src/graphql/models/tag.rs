@@ -208,19 +208,27 @@ pub async fn get_recruitment_tags(pool: &PgPool, recruitment_id: i64) -> Result<
 #[tracing::instrument]
 pub async fn is_already_exists_tag_name(pool: &PgPool, name: &str) -> Result<bool> {
     let sql = r#"
-        SELECT COUNT(DISTINCT id)
-        FROM tags
-        WHERE name = $1
+        SELECT EXISTS (
+            SELECT *
+            FROM tags
+            WHERE name = $1
+        )
     "#;
 
-    let is_exists = sqlx::query(sql)
+    let row = sqlx::query(sql)
         .bind(name)
-        .map(|row: PgRow| {
-            let count: i64 = row.get("count");
-            !matches!(count, 0)
-        })
+        .map(|row: PgRow| row.get::<bool, _>(0))
         .fetch_one(pool)
-        .await?;
+        .await;
 
-    Ok(is_exists)
+    match row {
+        Ok(is_exists) => {
+            tracing::info!("is already exists tag name successed!!");
+            Ok(is_exists)
+        }
+        Err(e) => {
+            tracing::error!("is already exists tag name failed: {:?}", e);
+            Err(e.into())
+        }
+    }
 }
