@@ -116,14 +116,11 @@ pub async fn get_recruitments(
 ) -> Result<Vec<Recruitment>> {
     let sql = r#"
         SELECT * 
-        FROM (
-            SELECT *
-            FROM recruitments
-            WHERE ($1 OR id < $2)
-            AND status = 'published'
-            ORDER BY id DESC
-            LIMIT $3
-        ) as r
+        FROM recruitments
+        WHERE ($1 OR id < $2)
+        AND status = 'published'
+        ORDER BY id DESC
+        LIMIT $3
     "#;
 
     let recruitments = sqlx::query_as::<_, Recruitment>(sql)
