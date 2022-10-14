@@ -192,26 +192,32 @@ pub fn authentication(password: &[u8], password_hash: &str) -> Result<bool> {
     Ok(is_auth)
 }
 
+// ? bool返す時isつけなくちゃいけないか他のネーミング探す
 #[tracing::instrument(skip(email))]
 pub async fn is_already_exists_email(email: &str, pool: &PgPool) -> Result<bool> {
-    let is_exists = sqlx::query(
-        r#"
-        SELECT COUNT(DISTINCT id)
-        FROM users
-        WHERE email = $1
-        "#,
-    )
-    .bind(email)
-    .map(|row: PgRow| {
-        // query_asを使わない場合何を返却するかをmapで実装
-        // bigintはRustではi64を使用する
-        let size: i64 = row.get("count");
-        !matches!(size, 0)
-    })
-    .fetch_one(pool)
-    .await?;
+    let sql = r#"
+        SELECT EXISTS (
+            SELECT *
+            FROM users
+            WHERE email = $1
+        )
+    "#;
+    let row = sqlx::query(sql)
+        .bind(email)
+        .map(|row: PgRow| row.get::<bool, _>(0))
+        .fetch_one(pool)
+        .await;
 
-    Ok(is_exists)
+    match row {
+        Ok(is_exists) => {
+            tracing::info!("is already exists email successed!!");
+            Ok(is_exists)
+        }
+        Err(e) => {
+            tracing::error!("is already exists email failed: {:?}", e);
+            Err(e.into())
+        }
+    }
 }
 
 fn generate_email_verification_code() -> String {
