@@ -1,4 +1,5 @@
 use anyhow::Result;
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use chrono::{Duration, Local};
 use connefut_api::{
     config::get_config,
@@ -7,10 +8,16 @@ use connefut_api::{
         prefecture::Prefecture,
         recruitment::{Category, Recruitment, Status},
         sport::Sport,
-        user::User,
+        user::{EmailVerificationStatus, User, UserRole},
     },
 };
+
+use fake::{
+    faker::{internet::en::FreeEmail, name::en::LastName},
+    Fake,
+};
 use rand::Rng;
+use rand_core::OsRng;
 use sqlx::{PgPool, Postgres, QueryBuilder};
 use std::ops::Add;
 use tracing_subscriber::fmt::format::FmtSpan;
@@ -22,8 +29,9 @@ async fn main() -> Result<()> {
         .init();
     let config = get_config();
     let pool = pool(config).await?;
+    create_users(&pool).await?;
     create_recruitments(&pool).await?;
-    tracing::info!("create test recruitments data!!");
+
     Ok(())
 }
 
@@ -43,6 +51,66 @@ async fn get_prefectures(pool: &PgPool) -> Result<Vec<Prefecture>> {
     let sql = "SELECT * FROM prefectures";
     let prefectures = sqlx::query_as::<_, Prefecture>(sql).fetch_all(pool).await?;
     Ok(prefectures)
+}
+
+#[tracing::instrument]
+async fn create_users(pool: &PgPool) -> Result<()> {
+    let users = (0..10).map(|i| {
+        let name = LastName().fake();
+        let email = FreeEmail().fake::<String>();
+        let password = b"password0123";
+
+        let salt = SaltString::generate(&mut OsRng);
+        let argon2 = Argon2::default();
+        let password_digest = argon2
+            .hash_password(password, &salt)
+            .expect("error")
+            .to_string();
+
+        User {
+            id: i,
+            name,
+            email: email.clone(),
+            unverified_email: Some(email),
+            avatar: String::from(
+                "https://abs.twimg.com/sticky/default_profile_images/default_profile.png",
+            ),
+            role: UserRole::General,
+            introduction: None,
+            email_verification_status: EmailVerificationStatus::Pending,
+            email_verification_code: None,
+            email_verification_code_expires_at: None,
+            password_digest,
+        }
+    });
+
+    let sql = r#"
+        INSERT INTO users
+            (name, email, unverified_email, avatar, role, 
+                introduction, email_verification_status, email_verification_code, email_verification_code_expires_at, password_digest, created_at, updated_at)
+    "#;
+
+    let now = Local::now();
+    let mut query_builder = QueryBuilder::<Postgres>::new(sql);
+    query_builder.push_values(users, |mut b, u| {
+        b.push_bind(u.name)
+            .push_bind(u.email)
+            .push_bind(u.unverified_email)
+            .push_bind(u.avatar)
+            .push_bind(u.role)
+            .push_bind(u.introduction)
+            .push_bind(u.email_verification_status)
+            .push_bind(u.email_verification_code)
+            .push_bind(u.email_verification_code_expires_at)
+            .push_bind(u.password_digest)
+            .push_bind(now)
+            .push_bind(now);
+    });
+
+    let query = query_builder.build();
+    query.execute(pool).await?;
+    tracing::info!("create users data!!");
+    Ok(())
 }
 
 #[tracing::instrument]
@@ -133,5 +201,6 @@ async fn create_recruitments(pool: &PgPool) -> Result<()> {
     });
     let query = query_builder.build();
     query.execute(pool).await?;
+    tracing::info!("create recruitments data!!");
     Ok(())
 }
