@@ -57,3 +57,5 @@ jsonwebtoken = "8.1.1"
 lettre = { version = "0.10", features = ["tokio1", "tokio1-rustls-tls", "tokio1-native-tls"]}
 #* faker
 fake = { version = "2.5"}
+#* async trait
+async-trait = "0.1.57"
