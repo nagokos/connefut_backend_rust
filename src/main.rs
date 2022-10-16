@@ -13,6 +13,7 @@ use std::{sync::Arc, *};
 use tower_http::cors::CorsLayer;
 use tracing_subscriber::fmt::format::FmtSpan;
 
+use self::graphql::loader::Loaders;
 use self::graphql::{GraphqlSchema, Mutation, Query};
 use crate::graphql::auth::{cookie::get_value_from_cookie, jwt::get_user_from_token};
 pub mod config;
@@ -49,8 +50,10 @@ async fn main() {
         let config = get_config();
         let pool = pool(config).await.unwrap();
         let arc_pool = Arc::new(pool);
+        let loaders = Loaders::new(&arc_pool);
         let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
             .data(arc_pool.clone())
+            .data(loaders)
             .data(config)
             .finish();
 

@@ -12,6 +12,7 @@ use self::resolvers::{
 };
 
 pub mod auth;
+pub mod loader;
 pub mod mail;
 pub mod models;
 pub mod mutations;

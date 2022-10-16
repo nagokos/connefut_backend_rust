@@ -6,7 +6,10 @@ use crate::{
     graphql::{
         auth::get_viewer,
         id_decode,
-        models::recruitment::{self, get_recruitments, is_next_recruitment, Recruitment},
+        models::recruitment::{
+            self, get_recruitments, get_viewer_recruitments, is_next_recruitment,
+            is_next_viewer_recruitment, Recruitment,
+        },
         mutations::recruitment_mutation::{
             CreateRecruitmentResult, CreateRecruitmentSuccess, RecruitmentInput,
             UpdateRecruitmentResult, UpdateRecruitmentSuccess,
@@ -91,6 +94,50 @@ impl RecruitmentQuery {
         };
 
         Ok(RecruitmentConnection { page_info, edges })
+    }
+    async fn viewer_recruitments(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<ID>,
+        first: Option<i32>,
+    ) -> Result<RecruitmentConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let search_params = SearchParams::new(first, after)?;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Err(async_graphql::Error::new("Please login")),
+        };
+
+        let recruitments = get_viewer_recruitments(pool, search_params, viewer.id).await?;
+
+        let edges = if recruitments.is_empty() {
+            None
+        } else {
+            let edges = recruitments
+                .iter()
+                .map(|recruitment| RecruitmentEdge {
+                    cursor: String::default(),
+                    node: recruitment.to_owned(),
+                })
+                .collect::<Vec<RecruitmentEdge>>();
+            Some(edges)
+        };
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let is_next = is_next_viewer_recruitment(pool, recruitment.id, viewer.id).await?;
+                let encoded_id =
+                    encode_config(format!("Recruitment:{}", recruitment.id), base64::URL_SAFE);
+                PageInfo {
+                    has_next_page: is_next,
+                    end_cursor: Some(encoded_id),
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
+        Ok(RecruitmentConnection { edges, page_info })
     }
 }
 
