@@ -4,20 +4,19 @@ use base64::{encode_config, URL_SAFE};
 use chrono::{DateTime, Local};
 use sqlx::{postgres::PgRow, PgPool, Row};
 
-use crate::{
-    database::get_db_pool,
-    graphql::{
-        id_decode, mutations::recruitment_mutation::RecruitmentInput,
-        utils::pagination::SearchParams,
-    },
+use crate::graphql::{
+    id_decode, loader::Loaders, mutations::recruitment_mutation::RecruitmentInput,
+    utils::pagination::SearchParams,
 };
 
 use super::{
+    prefecture::Prefecture,
+    sport::Sport,
     tag::{
         add_recruitment_tags, add_recruitment_tags_tx, get_recruitment_tags,
         remove_recruitment_tags_tx, Tag,
     },
-    user::{get_user_from_id, User},
+    user::User,
 };
 
 #[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type)]
@@ -89,11 +88,11 @@ impl Recruitment {
         self.detail.as_deref()
     }
     pub async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
-        let pool = get_db_pool(ctx).await?;
-        let user = get_user_from_id(pool, self.user_id).await?;
+        let loaders = ctx.data_unchecked::<Loaders>();
+        let user = loaders.user_loader.load_one(self.user_id).await?;
         match user {
-            Some(u) => Ok(u),
-            None => Err(async_graphql::Error::new(String::from("User not found"))),
+            Some(user) => Ok(user),
+            None => Err(async_graphql::Error::new(String::from("User are a must!"))),
         }
     }
     pub async fn created_at(&self) -> DateTime<Local> {
@@ -103,9 +102,33 @@ impl Recruitment {
         self.status
     }
     pub async fn tags(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Tag>> {
-        let pool = get_db_pool(ctx).await?;
-        let tags = get_recruitment_tags(pool, self.id).await?;
-        Ok(tags)
+        let loaders = ctx.data_unchecked::<Loaders>();
+        let tags = loaders.tag_loader.load_one(self.id).await?;
+        match tags {
+            Some(tags) => Ok(tags),
+            None => Ok(Vec::new()), // 募集にタグ紐づいていなかったら配列だけ返す
+        }
+    }
+    pub async fn prefecture(&self, ctx: &Context<'_>) -> async_graphql::Result<Prefecture> {
+        let loaders = ctx.data_unchecked::<Loaders>();
+        let prefecture = loaders
+            .prefecture_loader
+            .load_one(self.prefecture_id)
+            .await?;
+        match prefecture {
+            Some(prefecture) => Ok(prefecture),
+            None => Err(async_graphql::Error::new(String::from(
+                "Prefecture are a must!",
+            ))),
+        }
+    }
+    pub async fn sport(&self, ctx: &Context<'_>) -> async_graphql::Result<Sport> {
+        let loaders = ctx.data_unchecked::<Loaders>();
+        let sport = loaders.sport_loader.load_one(self.sport_id).await?;
+        match sport {
+            Some(sport) => Ok(sport),
+            None => Err(async_graphql::Error::new(String::from("Sport are a must!"))),
+        }
     }
 }
 
@@ -143,18 +166,75 @@ pub async fn get_recruitments(
     }
 }
 
-//#[tracing::instrument]
-//pub async fn get_viewer_recruitments(
-//    pool: &PgPool,
-//    search_params: SearchParams,
-//) -> Result<Vec<Recruitment>> {
-//    let sql = r#"
-//        SELECT *
-//        FROM (
+#[tracing::instrument]
+pub async fn get_viewer_recruitments(
+    pool: &PgPool,
+    search_params: SearchParams,
+    user_id: i64,
+) -> Result<Vec<Recruitment>> {
+    // 一ページ目の時はid < $2は実行されたくないためOR必要
+    let sql = r#"
+        SELECT *
+        FROM recruitments
+        WHERE ($1 OR id < $2)
+        AND user_id = $3
+        ORDER BY id DESC
+        LIMIT $4
+    "#;
 
-//        )
-//    "#;
-//}
+    let row = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(!search_params.use_after)
+        .bind(search_params.after)
+        .bind(user_id)
+        .bind(search_params.num_rows)
+        .fetch_all(pool)
+        .await;
+
+    match row {
+        Ok(recruitments) => {
+            tracing::info!("get viewer recruitments successed!!");
+            Ok(recruitments)
+        }
+        Err(e) => {
+            tracing::error!("get viewer recruitments failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn is_next_viewer_recruitment(pool: &PgPool, id: i64, user_id: i64) -> Result<bool> {
+    // 次ページがあるか確認の時はOR必要ない
+    // 最後のレコードのidを基準にするため
+    let sql = r#"
+        SELECT EXISTS (
+            SELECT *
+            FROM recruitments
+            WHERE id < $1
+            AND user_id = $2
+            ORDER BY id DESC
+            LIMIT 1
+        )
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(id)
+        .bind(user_id)
+        .map(|row: PgRow| row.get::<bool, _>(0))
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(is_exists) => {
+            tracing::info!("is next viewer recruitment successed!!");
+            Ok(is_exists)
+        }
+        Err(e) => {
+            tracing::error!("is next viewer recruitment failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
 
 #[tracing::instrument]
 pub async fn is_next_recruitment(pool: &PgPool, id: i64) -> Result<bool> {
