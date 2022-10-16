@@ -8,6 +8,7 @@ use connefut_api::{
         prefecture::Prefecture,
         recruitment::{Category, Recruitment, Status},
         sport::Sport,
+        tag::Tag,
         user::{EmailVerificationStatus, User, UserRole},
     },
 };
@@ -155,7 +156,7 @@ async fn create_recruitments(pool: &PgPool) -> Result<()> {
     let sports = get_sports(pool).await?;
     let prefectures = get_prefectures(pool).await?;
     let mut rng = rand::thread_rng();
-    let recruitments = (0..=1000).map(|i| Recruitment {
+    let recruitments = (0..300).map(|i| Recruitment {
         id: i,
         title: format!("対戦相手募集 朝霞中央公園陸上競技場(人工芝) {}", i),
         category: Category::Opponent,
@@ -199,8 +200,25 @@ async fn create_recruitments(pool: &PgPool) -> Result<()> {
             .push_bind(r.created_at)
             .push_bind(now);
     });
+    query_builder.push("RETURNING *");
+    let query = query_builder.build_query_as::<Recruitment>();
+    let recruitments = query.fetch_all(pool).await?;
+    tracing::info!("create recruitments data!!");
+
+    let sql = "SELECT * FROM tags";
+    let tags = sqlx::query_as::<_, Tag>(sql).fetch_all(pool).await?;
+
+    let sql = "INSERT INTO recruitment_tags (recruitment_id, tag_id, created_at, updated_at) ";
+    let mut query_builder = QueryBuilder::<Postgres>::new(sql);
+    query_builder.push_values(recruitments, |mut b, r| {
+        b.push_bind(r.id)
+            .push_bind(tags.get(rng.gen_range(0..tags.len())).unwrap().id)
+            .push_bind(now)
+            .push_bind(now);
+    });
+
     let query = query_builder.build();
     query.execute(pool).await?;
-    tracing::info!("create recruitments data!!");
+    tracing::info!("create recruitment_tags data!!");
     Ok(())
 }
