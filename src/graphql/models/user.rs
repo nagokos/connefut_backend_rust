@@ -3,15 +3,27 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2, PasswordHash, PasswordVerifier,
 };
-use async_graphql::{Enum, Object, ID};
+use async_graphql::{Context, Enum, Object, ID};
 use base64::{encode_config, URL_SAFE};
 use chrono::{DateTime, Duration, Local};
 use rand::Rng;
 use sqlx::{postgres::PgRow, PgPool, Row};
 use std::ops::Add;
 
-use crate::graphql::{
-    mail::sender::send_email_verification_code, mutations::user_mutation::RegisterUserInput,
+use crate::{
+    database::get_db_pool,
+    graphql::{
+        id_encode,
+        mail::sender::send_email_verification_code,
+        mutations::user_mutation::RegisterUserInput,
+        resolvers::recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
+        utils::pagination::{PageInfo, SearchParams},
+    },
+};
+
+use super::recruitment::{
+    get_user_recruitments, get_viewer_recruitments, is_next_user_recruitment,
+    is_next_viewer_recruitment,
 };
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
@@ -70,6 +82,44 @@ impl User {
     }
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
+    }
+    async fn recruitments(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<ID>,
+    ) -> async_graphql::Result<RecruitmentConnection> {
+        let search_params = SearchParams::new(first, after)?;
+        let pool = get_db_pool(ctx).await?;
+        let recruitments = get_user_recruitments(pool, search_params, self.id).await?;
+
+        let edges = if recruitments.is_empty() {
+            None
+        } else {
+            let edges: Vec<RecruitmentEdge> = recruitments
+                .iter()
+                .map(|recruitment| RecruitmentEdge {
+                    cursor: Default::default(),
+                    node: recruitment.to_owned(),
+                })
+                .collect();
+            Some(edges)
+        };
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let has_next_page = is_next_user_recruitment(pool, recruitment.id, self.id).await?;
+                let end_cursor =
+                    encode_config(format!("Recruitment:{}", recruitment.id), base64::URL_SAFE);
+                PageInfo {
+                    has_next_page,
+                    end_cursor: Some(end_cursor),
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+        Ok(RecruitmentConnection { edges, page_info })
     }
 }
 
