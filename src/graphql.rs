@@ -1,6 +1,6 @@
 use anyhow::Result;
 use async_graphql::{EmptySubscription, MergedObject, Schema, ID};
-use base64::{decode_config, URL_SAFE};
+use base64::{decode_config, encode_config, URL_SAFE};
 
 use self::resolvers::{
     prefecture_resolver::PrefectureQuery,
@@ -32,6 +32,10 @@ pub struct Query(
 pub struct Mutation(UserMutation, RecruitmentMutation, TagMutation);
 
 pub type GraphqlSchema = Schema<Query, Mutation, EmptySubscription>;
+
+pub fn id_encode(name: &str, id: i64) -> String {
+    encode_config(format!("{}:{}", name, id), base64::URL_SAFE)
+}
 
 pub fn id_decode(id: &ID) -> Result<i64> {
     let bytes = decode_config(id.as_bytes(), URL_SAFE)?;
