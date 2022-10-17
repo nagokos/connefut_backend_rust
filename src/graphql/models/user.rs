@@ -133,6 +133,45 @@ impl Viewer {
     async fn account_user(&self) -> User {
         self.account_user.clone()
     }
+    async fn recruitments(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<ID>,
+    ) -> async_graphql::Result<RecruitmentConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let search_params = SearchParams::new(first, after)?;
+        let recruitments =
+            get_viewer_recruitments(pool, search_params, self.account_user.id).await?;
+
+        let edges = if recruitments.is_empty() {
+            None
+        } else {
+            let edges: Vec<RecruitmentEdge> = recruitments
+                .iter()
+                .map(|recruitment| RecruitmentEdge {
+                    cursor: String::default(),
+                    node: recruitment.to_owned(),
+                })
+                .collect();
+            Some(edges)
+        };
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let has_next_page =
+                    is_next_viewer_recruitment(pool, recruitment.id, self.account_user.id).await?;
+                let end_cursor = id_encode("Recruitment", recruitment.id);
+                PageInfo {
+                    has_next_page,
+                    end_cursor: Some(end_cursor),
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+        Ok(RecruitmentConnection { edges, page_info })
+    }
 }
 
 #[tracing::instrument]
