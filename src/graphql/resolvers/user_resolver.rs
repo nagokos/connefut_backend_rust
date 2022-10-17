@@ -20,12 +20,17 @@ pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
-    async fn viewer(&self, ctx: &Context<'_>) -> Result<Viewer> {
+    async fn viewer(&self, ctx: &Context<'_>) -> Result<Option<Viewer>> {
         let user = get_viewer(ctx).await;
-        let viewer = Viewer {
-            account_user: { user.to_owned() },
-        };
-        Ok(viewer)
+        match user {
+            Some(user) => {
+                let viewer = Viewer {
+                    account_user: { user.to_owned() },
+                };
+                Ok(Some(viewer))
+            }
+            None => Ok(None),
+        }
     }
 }
 
@@ -58,9 +63,7 @@ impl UserMutation {
         match jwt::token_encode(claims) {
             Ok(token) => {
                 jwt::set_jwt_cookie(token, ctx);
-                let viewer = Viewer {
-                    account_user: user.into(),
-                };
+                let viewer = Viewer { account_user: user };
                 Ok(RegisterUserSuccess { viewer }.into())
             }
             Err(e) => Err(e.into()),
@@ -105,9 +108,7 @@ impl UserMutation {
                 match jwt::token_encode(claims) {
                     Ok(token) => {
                         jwt::set_jwt_cookie(token, ctx);
-                        let viewer = Viewer {
-                            account_user: user.into(),
-                        };
+                        let viewer = Viewer { account_user: user };
                         tracing::info!("User authenticated.");
                         Ok(LoginUserSuccess { viewer }.into())
                     }

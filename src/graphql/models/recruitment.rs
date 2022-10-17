@@ -167,6 +167,75 @@ pub async fn get_recruitments(
 }
 
 #[tracing::instrument]
+pub async fn get_user_recruitments(
+    pool: &PgPool,
+    search_params: SearchParams,
+    user_id: i64,
+) -> Result<Vec<Recruitment>> {
+    let sql = r#"
+        SELECT *
+        FROM recruitments
+        WHERE user_id = $1
+        AND status = 'published'
+        AND ($2 OR id < $3)
+        ORDER BY id DESC
+        LIMIT $4
+    "#;
+
+    let rows = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(user_id)
+        .bind(!search_params.use_after)
+        .bind(search_params.after)
+        .bind(search_params.num_rows)
+        .fetch_all(pool)
+        .await;
+
+    match rows {
+        Ok(recruitments) => {
+            tracing::info!("get user recruitments successed!!");
+            Ok(recruitments)
+        }
+        Err(e) => {
+            tracing::error!("get user recruitments failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn is_next_user_recruitment(pool: &PgPool, id: i64, user_id: i64) -> Result<bool> {
+    let sql = r#"
+        SELECT EXISTS (
+            SELECT id
+            FROM recruitments
+            WHERE user_id = $1
+            AND status = 'published'
+            AND id < $2
+            ORDER BY id DESC
+            LIMIT 1
+        )
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(user_id)
+        .bind(id)
+        .map(|row: PgRow| row.get::<bool, _>(0))
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(is_exists) => {
+            tracing::info!("is next user recruitment successed!!");
+            Ok(is_exists)
+        }
+        Err(e) => {
+            tracing::error!("is next user recruitment failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
 pub async fn get_viewer_recruitments(
     pool: &PgPool,
     search_params: SearchParams,
