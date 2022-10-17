@@ -20,12 +20,17 @@ pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
-    async fn viewer(&self, ctx: &Context<'_>) -> Result<Viewer> {
+    async fn viewer(&self, ctx: &Context<'_>) -> Result<Option<Viewer>> {
         let user = get_viewer(ctx).await;
-        let viewer = Viewer {
-            account_user: { user.to_owned() },
-        };
-        Ok(viewer)
+        match user {
+            Some(user) => {
+                let viewer = Viewer {
+                    account_user: { user.to_owned() },
+                };
+                Ok(Some(viewer))
+            }
+            None => Ok(None),
+        }
     }
 }
 
