@@ -130,7 +130,7 @@ pub struct Viewer {
 
 #[Object]
 impl Viewer {
-    async fn account_user(&self) -> Option<User> {
+    async fn account_user(&self) -> User {
         self.account_user.clone()
     }
 }
