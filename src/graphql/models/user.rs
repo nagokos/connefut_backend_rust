@@ -125,7 +125,7 @@ impl User {
 
 #[derive(Clone, Debug)]
 pub struct Viewer {
-    pub account_user: Option<User>,
+    pub account_user: User,
 }
 
 #[Object]
