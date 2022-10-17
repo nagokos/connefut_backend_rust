@@ -166,6 +166,7 @@ pub async fn get_recruitments(
     }
 }
 
+//? get_viewer_recruitmentsとの違いが公開済みかどうかでしかないためクエリだけ分岐で変えても？
 #[tracing::instrument]
 pub async fn get_user_recruitments(
     pool: &PgPool,
