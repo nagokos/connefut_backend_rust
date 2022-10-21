@@ -11,6 +11,8 @@
 | [public.tags](public.tags.md) | 4 |  | BASE TABLE |
 | [public.recruitments](public.recruitments.md) | 16 |  | BASE TABLE |
 | [public.recruitment_tags](public.recruitment_tags.md) | 5 |  | BASE TABLE |
+| [public.stocks](public.stocks.md) | 5 |  | BASE TABLE |
+| [public.relationships](public.relationships.md) | 5 |  | BASE TABLE |
 
 ## ER図
 

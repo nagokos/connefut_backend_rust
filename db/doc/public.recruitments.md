@@ -6,7 +6,7 @@
 
 | 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
 | ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
-| id | bigint | nextval('recruitments_id_seq'::regclass) | false | [public.recruitment_tags](public.recruitment_tags.md) |  |  |
+| id | bigint | nextval('recruitments_id_seq'::regclass) | false | [public.recruitment_tags](public.recruitment_tags.md) [public.stocks](public.stocks.md) |  |  |
 | title | varchar(60) |  | false |  |  |  |
 | category | recruitment_category | 'opponent'::recruitment_category | false |  |  |  |
 | venue | varchar |  | true |  |  |  |
