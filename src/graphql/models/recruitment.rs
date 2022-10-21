@@ -5,13 +5,14 @@ use chrono::{DateTime, Local};
 use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::graphql::{
-    id_decode, loader::Loaders, mutations::recruitment_mutation::RecruitmentInput,
-    utils::pagination::SearchParams,
+    auth::get_viewer, id_decode, loader::Loaders,
+    mutations::recruitment_mutation::RecruitmentInput, utils::pagination::SearchParams,
 };
 
 use super::{
     prefecture::Prefecture,
     sport::Sport,
+    stock::Stock,
     tag::{
         add_recruitment_tags, add_recruitment_tags_tx, get_recruitment_tags,
         remove_recruitment_tags_tx, Tag,
@@ -83,6 +84,9 @@ impl Recruitment {
     }
     pub async fn closing_at(&self) -> Option<DateTime<Local>> {
         self.closing_at
+    }
+    pub async fn published_at(&self) -> Option<DateTime<Local>> {
+        self.published_at
     }
     pub async fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
