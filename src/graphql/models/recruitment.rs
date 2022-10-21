@@ -91,6 +91,41 @@ impl Recruitment {
     pub async fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
     }
+    pub async fn stock(&self, ctx: &Context<'_>) -> async_graphql::Result<Stock> {
+        let loaders = ctx.data_unchecked::<Loaders>();
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => {
+                let stock = Stock {
+                    recruitment_id: self.id,
+                    viewer_has_stocked: false,
+                };
+                return Ok(stock);
+            }
+        };
+
+        // [viewer_id, recruitment_id]の形のkeyにする
+        // データストアでは{ [viewer_id, recruitment_id]: () }の形になっている(keyの組み合わせが重要)
+        // keyに対応したデータが存在＝ストックしているのでviwer_has_stockedをtrue存在しなかったらfalseを返す
+        let is_already_stocked = loaders.stock_loader.load_one([viewer.id, self.id]).await?;
+
+        match is_already_stocked {
+            Some(_) => {
+                let stock = Stock {
+                    recruitment_id: self.id,
+                    viewer_has_stocked: true,
+                };
+                Ok(stock)
+            }
+            None => {
+                let stock = Stock {
+                    recruitment_id: self.id,
+                    viewer_has_stocked: false,
+                };
+                Ok(stock)
+            }
+        }
+    }
     pub async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         let loaders = ctx.data_unchecked::<Loaders>();
         let user = loaders.user_loader.load_one(self.user_id).await?;
