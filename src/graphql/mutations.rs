@@ -4,6 +4,7 @@ use self::{
     recruitment_mutation::{
         CreateRecruitmentInvalidInputError, UpdateRecruitmentInvalidInputError,
     },
+    stock_mutation::AddStockAlreadyStockedError,
     tag_mutation::CreateTagAlreadyExistsNameError,
     user_mutation::{
         LoginUserAuthenticationError, LoginUserInvalidInputError, LoginUserNotFoundError,
@@ -12,6 +13,7 @@ use self::{
 };
 
 pub mod recruitment_mutation;
+pub mod stock_mutation;
 pub mod tag_mutation;
 pub mod user_mutation;
 
@@ -27,4 +29,5 @@ pub enum Error {
     CreateRecruitmentInvalidInputError(CreateRecruitmentInvalidInputError),
     UpdateRecruitmentInvalidInputError(UpdateRecruitmentInvalidInputError),
     CreateTagAlreadyExistsNameError(CreateTagAlreadyExistsNameError),
+    AddStockAlreadyStockedError(AddStockAlreadyStockedError),
 }
