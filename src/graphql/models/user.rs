@@ -22,8 +22,8 @@ use crate::{
 };
 
 use super::recruitment::{
-    get_user_recruitments, get_viewer_recruitments, is_next_user_recruitment,
-    is_next_viewer_recruitment,
+    get_stocked_recruitments, get_user_recruitments, get_viewer_recruitments,
+    is_next_stocked_recruitment, is_next_user_recruitment, is_next_viewer_recruitment,
 };
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
@@ -170,6 +170,47 @@ impl Viewer {
             }
             None => Default::default(),
         };
+        Ok(RecruitmentConnection { edges, page_info })
+    }
+    async fn stocked_recruitments(
+        &self,
+        ctx: &Context<'_>,
+        first: Option<i32>,
+        after: Option<ID>,
+    ) -> Result<RecruitmentConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let search_params = SearchParams::new(first, after)?;
+
+        let recruitments =
+            get_stocked_recruitments(pool, self.account_user.id, search_params).await?;
+
+        let edges = if recruitments.is_empty() {
+            None
+        } else {
+            let edges: Vec<RecruitmentEdge> = recruitments
+                .iter()
+                .map(|recruitment| RecruitmentEdge {
+                    cursor: String::default(),
+                    node: recruitment.to_owned(),
+                })
+                .collect();
+            Some(edges)
+        };
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let end_cursor = id_encode("Recruitment", recruitment.id);
+                let has_next_page =
+                    is_next_stocked_recruitment(pool, recruitment.id, self.account_user.id).await?;
+                PageInfo {
+                    end_cursor: Some(end_cursor),
+                    has_next_page,
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
         Ok(RecruitmentConnection { edges, page_info })
     }
 }
