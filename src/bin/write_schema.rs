@@ -4,6 +4,7 @@ use async_graphql::{EmptySubscription, Schema};
 use connefut_api::graphql::{
     mutations::{
         recruitment_mutation::RecruitmentInput,
+        stock_mutation::{AddStockInput, AddStockResult, RemoveStockInput, RemoveStockResult},
         tag_mutation::{CreateTagInput, CreateTagResult},
         user_mutation::{LoginUserInput, LoginUserResult, RegisterUserInput, RegisterUserResult},
         Error,
@@ -29,10 +30,14 @@ async fn main() -> anyhow::Result<()> {
         .register_output_type::<RecruitmentConnection>()
         .register_output_type::<RecruitmentEdge>()
         .register_output_type::<TagEdge>()
+        .register_output_type::<AddStockResult>()
+        .register_output_type::<RemoveStockResult>()
         .register_input_type::<RegisterUserInput>()
         .register_input_type::<LoginUserInput>()
         .register_input_type::<RecruitmentInput>()
         .register_input_type::<CreateTagInput>()
+        .register_input_type::<AddStockInput>()
+        .register_input_type::<RemoveStockInput>()
         .finish();
     let mut file = std::fs::File::create("schema.graphql")?;
     let contents = &schema.sdl();
