@@ -6,6 +6,7 @@ use self::resolvers::{
     prefecture_resolver::PrefectureQuery,
     recruitment_resolver::{RecruitmentMutation, RecruitmentQuery},
     sport_resolver::SportQuery,
+    stock_resolver::StockMutation,
     tag_resolver::{TagMutation, TagQuery},
     user_resolver::{UserMutation, UserQuery},
     RootQuery,
@@ -29,7 +30,12 @@ pub struct Query(
     RecruitmentQuery,
 );
 #[derive(MergedObject, Default)]
-pub struct Mutation(UserMutation, RecruitmentMutation, TagMutation);
+pub struct Mutation(
+    UserMutation,
+    RecruitmentMutation,
+    TagMutation,
+    StockMutation,
+);
 
 pub type GraphqlSchema = Schema<Query, Mutation, EmptySubscription>;
 

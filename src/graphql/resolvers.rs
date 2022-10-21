@@ -3,12 +3,15 @@ pub use async_graphql::*;
 pub mod prefecture_resolver;
 pub mod recruitment_resolver;
 pub mod sport_resolver;
+pub mod stock_resolver;
 pub mod tag_resolver;
 pub mod user_resolver;
 
 use crate::graphql::models::{
     prefecture::Prefecture, recruitment::Recruitment, sport::Sport, tag::Tag, user::User,
 };
+
+use super::models::stock::Stock;
 
 //* Node interface */
 #[derive(Interface)]
@@ -19,6 +22,7 @@ pub enum Node {
     Tag(Tag),
     User(User),
     Recruitment(Recruitment),
+    Stock(Stock),
 }
 
 #[derive(Default)]
