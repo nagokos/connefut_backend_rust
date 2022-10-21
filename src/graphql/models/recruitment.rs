@@ -398,6 +398,88 @@ pub async fn is_next_recruitment(pool: &PgPool, id: i64) -> Result<bool> {
 }
 
 #[tracing::instrument]
+pub async fn get_stocked_recruitments(
+    pool: &PgPool,
+    user_id: i64,
+    search_params: SearchParams,
+) -> Result<Vec<Recruitment>> {
+    let sql = r#"
+        SELECT r.*
+        FROM recruitments as r
+        INNER JOIN stocks as s
+            ON r.id = s.recruitment_id
+        WHERE s.user_id = $1
+        AND ($2 OR s.id < ( SELECT id 
+                            FROM stocks
+                            WHERE user_id = $3
+                            AND recruitment_id = $4 )
+        )
+        AND status = 'published'
+        ORDER BY s.id DESC
+        LIMIT $5
+    "#;
+
+    let rows = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(user_id)
+        .bind(!search_params.use_after)
+        .bind(user_id)
+        .bind(search_params.after)
+        .bind(search_params.num_rows)
+        .fetch_all(pool)
+        .await;
+
+    match rows {
+        Ok(recruitments) => {
+            tracing::info!("get stocked recruitments successed!!");
+            Ok(recruitments)
+        }
+        Err(e) => {
+            tracing::error!("get stocked recruitments failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn is_next_stocked_recruitment(pool: &PgPool, id: i64, user_id: i64) -> Result<bool> {
+    let sql = r#"
+        SELECT EXISTS (
+            SELECT *
+            FROM recruitments as r
+            INNER JOIN stocks as s
+                ON r.id = s.recruitment_id
+            WHERE s.user_id = $1
+            AND s.id < ( SELECT id
+                       FROM stocks
+                       WHERE user_id = $2
+                       AND recruitment_id = $3 )
+            AND r.status = 'published'
+            ORDER BY s.id DESC
+            LIMIT 1
+        )
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(user_id)
+        .bind(user_id)
+        .bind(id)
+        .map(|row: PgRow| row.get::<bool, _>(0))
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(has_next) => {
+            tracing::info!("is next stocked recruitment successed!!");
+            Ok(has_next)
+        }
+        Err(e) => {
+            tracing::error!("is next stocked recruitment failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
 pub async fn create(pool: &PgPool, input: RecruitmentInput, user_id: i64) -> Result<Recruitment> {
     let sql = r#"
       INSERT INTO recruitments
