@@ -68,7 +68,7 @@
 <polygon fill="none" stroke="#000000" stroke-width="3" points="398.5,-681.5 398.5,-1199.5 663.5,-1199.5 663.5,-681.5 398.5,-681.5"/>
 </g>
 <!-- public.sports -->
-<g id="node3" class="node">
+<g id="node4" class="node">
 <title>public.sports</title>
 <polygon fill="#efefef" stroke="transparent" points="47,-342.5 47,-377.5 300,-377.5 300,-342.5 47,-342.5"/>
 <polygon fill="none" stroke="#000000" points="47,-342.5 47,-377.5 300,-377.5 300,-342.5 47,-342.5"/>
@@ -89,14 +89,14 @@
 <text text-anchor="start" x="127.6241" y="-233.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
 </g>
 <!-- public.recruitments&#45;&gt;public.sports -->
-<g id="edge2" class="edge">
+<g id="edge3" class="edge">
 <title>public.recruitments:sport_id&#45;&gt;public.sports:id</title>
 <path fill="none" stroke="#000000" d="M390.8685,-873.0728C340.202,-821.0217 358.8375,-327.5 300,-327.5"/>
 <polygon fill="#000000" stroke="#000000" points="391.0018,-873.1374 398.0368,-881.5492 395.5009,-875.3187 400,-877.5 400,-877.5 400,-877.5 395.5009,-875.3187 401.9632,-873.4508 391.0018,-873.1374 391.0018,-873.1374"/>
 <text text-anchor="start" x="52.445" y="-887.5" font-family="Arial" font-size="10.00" fill="#000000">FOREIGN KEY (sport_id) REFERENCES sports(id) ON DELETE RESTRICT</text>
 </g>
 <!-- public.prefectures -->
-<g id="node4" class="node">
+<g id="node5" class="node">
 <title>public.prefectures</title>
 <polygon fill="#efefef" stroke="transparent" points="404,-342.5 404,-377.5 657,-377.5 657,-342.5 404,-342.5"/>
 <polygon fill="none" stroke="#000000" points="404,-342.5 404,-377.5 657,-377.5 657,-342.5 404,-342.5"/>
@@ -117,14 +117,14 @@
 <text text-anchor="start" x="484.6241" y="-233.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
 </g>
 <!-- public.recruitments&#45;&gt;public.prefectures -->
-<g id="edge3" class="edge">
+<g id="edge4" class="edge">
 <title>public.recruitments:prefecture_id&#45;&gt;public.prefectures:id</title>
 <path fill="none" stroke="#000000" d="M389.7025,-846.9345C310.645,-837.7425 362.0388,-718.4932 400,-637 463.0034,-501.7473 593.9966,-556.2527 657,-421 674.547,-383.3308 698.5556,-327.5 657,-327.5"/>
 <polygon fill="#000000" stroke="#000000" points="390.015,-846.9516 399.7532,-851.9932 395.0075,-847.2258 400,-847.5 400,-847.5 400,-847.5 395.0075,-847.2258 400.2468,-843.0068 390.015,-846.9516 390.015,-846.9516"/>
 <text text-anchor="start" x="6.66" y="-857.5" font-family="Arial" font-size="10.00" fill="#000000">FOREIGN KEY (prefecture_id) REFERENCES prefectures(id) ON DELETE RESTRICT</text>
 </g>
 <!-- public.users -->
-<g id="node5" class="node">
+<g id="node6" class="node">
 <title>public.users</title>
 <polygon fill="#efefef" stroke="transparent" points="761,-522.5 761,-557.5 1163,-557.5 1163,-522.5 761,-522.5"/>
 <polygon fill="none" stroke="#000000" points="761,-522.5 761,-557.5 1163,-557.5 1163,-522.5 761,-522.5"/>
@@ -181,7 +181,7 @@
 <text text-anchor="start" x="841.9326" y="-53.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
 </g>
 <!-- public.recruitments&#45;&gt;public.users -->
-<g id="edge4" class="edge">
+<g id="edge5" class="edge">
 <title>public.recruitments:user_id&#45;&gt;public.users:id</title>
 <path fill="none" stroke="#000000" d="M671.9719,-785.0794C724.6843,-757.7124 698.6122,-507.5 761,-507.5"/>
 <polygon fill="#000000" stroke="#000000" points="671.7178,-785.141 660.9384,-783.127 666.8589,-786.3205 662,-787.5 662,-787.5 662,-787.5 666.8589,-786.3205 663.0616,-791.873 671.7178,-785.141 671.7178,-785.141"/>
@@ -190,33 +190,64 @@
 <!-- public.recruitment_tags -->
 <g id="node2" class="node">
 <title>public.recruitment_tags</title>
-<polygon fill="#efefef" stroke="transparent" points="382,-1472.5 382,-1507.5 679,-1507.5 679,-1472.5 382,-1472.5"/>
-<polygon fill="none" stroke="#000000" points="382,-1472.5 382,-1507.5 679,-1507.5 679,-1472.5 382,-1472.5"/>
-<text text-anchor="start" x="388.8581" y="-1485.3" font-family="Arial Bold" font-size="18.00" fill="#000000">public.recruitment_tags</text>
-<text text-anchor="start" x="574.8881" y="-1485.3" font-family="Arial" font-size="14.00" fill="#000000"> </text>
-<text text-anchor="start" x="578.7787" y="-1485.3" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
-<polygon fill="none" stroke="#000000" points="382,-1442.5 382,-1472.5 679,-1472.5 679,-1442.5 382,-1442.5"/>
-<text text-anchor="start" x="389" y="-1453.9" font-family="Arial" font-size="14.00" fill="#000000">id </text>
-<text text-anchor="start" x="403.7798" y="-1453.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
-<polygon fill="none" stroke="#000000" points="382,-1412.5 382,-1442.5 679,-1442.5 679,-1412.5 382,-1412.5"/>
-<text text-anchor="start" x="389" y="-1423.9" font-family="Arial" font-size="14.00" fill="#000000">tag_id </text>
-<text text-anchor="start" x="431.0182" y="-1423.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
-<polygon fill="none" stroke="#000000" points="382,-1382.5 382,-1412.5 679,-1412.5 679,-1382.5 382,-1382.5"/>
-<text text-anchor="start" x="389" y="-1393.9" font-family="Arial" font-size="14.00" fill="#000000">recruitment_id </text>
-<text text-anchor="start" x="481.5624" y="-1393.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
-<polygon fill="none" stroke="#000000" points="382,-1352.5 382,-1382.5 679,-1382.5 679,-1352.5 382,-1352.5"/>
-<text text-anchor="start" x="389" y="-1363.9" font-family="Arial" font-size="14.00" fill="#000000">created_at </text>
-<text text-anchor="start" x="459.028" y="-1363.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
-<polygon fill="none" stroke="#000000" points="382,-1322.5 382,-1352.5 679,-1352.5 679,-1322.5 382,-1322.5"/>
-<text text-anchor="start" x="389" y="-1333.9" font-family="Arial" font-size="14.00" fill="#000000">updated_at </text>
-<text text-anchor="start" x="462.9326" y="-1333.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
+<polygon fill="#efefef" stroke="transparent" points="193,-1472.5 193,-1507.5 490,-1507.5 490,-1472.5 193,-1472.5"/>
+<polygon fill="none" stroke="#000000" points="193,-1472.5 193,-1507.5 490,-1507.5 490,-1472.5 193,-1472.5"/>
+<text text-anchor="start" x="199.8581" y="-1485.3" font-family="Arial Bold" font-size="18.00" fill="#000000">public.recruitment_tags</text>
+<text text-anchor="start" x="385.8881" y="-1485.3" font-family="Arial" font-size="14.00" fill="#000000"> </text>
+<text text-anchor="start" x="389.7787" y="-1485.3" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
+<polygon fill="none" stroke="#000000" points="193,-1442.5 193,-1472.5 490,-1472.5 490,-1442.5 193,-1442.5"/>
+<text text-anchor="start" x="200" y="-1453.9" font-family="Arial" font-size="14.00" fill="#000000">id </text>
+<text text-anchor="start" x="214.7798" y="-1453.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
+<polygon fill="none" stroke="#000000" points="193,-1412.5 193,-1442.5 490,-1442.5 490,-1412.5 193,-1412.5"/>
+<text text-anchor="start" x="200" y="-1423.9" font-family="Arial" font-size="14.00" fill="#000000">tag_id </text>
+<text text-anchor="start" x="242.0182" y="-1423.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
+<polygon fill="none" stroke="#000000" points="193,-1382.5 193,-1412.5 490,-1412.5 490,-1382.5 193,-1382.5"/>
+<text text-anchor="start" x="200" y="-1393.9" font-family="Arial" font-size="14.00" fill="#000000">recruitment_id </text>
+<text text-anchor="start" x="292.5624" y="-1393.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
+<polygon fill="none" stroke="#000000" points="193,-1352.5 193,-1382.5 490,-1382.5 490,-1352.5 193,-1352.5"/>
+<text text-anchor="start" x="200" y="-1363.9" font-family="Arial" font-size="14.00" fill="#000000">created_at </text>
+<text text-anchor="start" x="270.028" y="-1363.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
+<polygon fill="none" stroke="#000000" points="193,-1322.5 193,-1352.5 490,-1352.5 490,-1322.5 193,-1322.5"/>
+<text text-anchor="start" x="200" y="-1333.9" font-family="Arial" font-size="14.00" fill="#000000">updated_at </text>
+<text text-anchor="start" x="273.9326" y="-1333.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
 </g>
 <!-- public.recruitment_tags&#45;&gt;public.recruitments -->
 <g id="edge1" class="edge">
 <title>public.recruitment_tags:recruitment_id&#45;&gt;public.recruitments:id</title>
-<path fill="none" stroke="#000000" d="M688.9965,-1396.3798C728.6449,-1386.6848 711.0585,-1316.4608 679,-1280 596.4423,-1186.1053 482.5577,-1337.8947 400,-1244 371.6799,-1211.7909 357.1111,-1147.5 400,-1147.5"/>
-<polygon fill="#000000" stroke="#000000" points="688.9378,-1396.3862 678.4988,-1393.028 683.9689,-1396.9431 679,-1397.5 679,-1397.5 679,-1397.5 683.9689,-1396.9431 679.5012,-1401.972 688.9378,-1396.3862 688.9378,-1396.3862"/>
-<text text-anchor="start" x="685.5005" y="-1407.5" font-family="Arial" font-size="10.00" fill="#000000">FOREIGN KEY (recruitment_id) REFERENCES recruitments(id) ON DELETE CASCADE</text>
+<path fill="none" stroke="#000000" d="M500.4136,-1396.3159C538.7815,-1386.6484 517.1044,-1320.034 490,-1280 465.8474,-1244.3258 424.1526,-1279.6742 400,-1244 375.9553,-1208.4851 357.1111,-1147.5 400,-1147.5"/>
+<polygon fill="#000000" stroke="#000000" points="499.936,-1396.3702 489.4916,-1393.0288 494.968,-1396.9351 490,-1397.5 490,-1397.5 490,-1397.5 494.968,-1396.9351 490.5084,-1401.9712 499.936,-1396.3702 499.936,-1396.3702"/>
+<text text-anchor="start" x="88.5005" y="-1407.5" font-family="Arial" font-size="10.00" fill="#000000">FOREIGN KEY (recruitment_id) REFERENCES recruitments(id) ON DELETE CASCADE</text>
+</g>
+<!-- public.stocks -->
+<g id="node3" class="node">
+<title>public.stocks</title>
+<polygon fill="#efefef" stroke="transparent" points="594,-1472.5 594,-1507.5 847,-1507.5 847,-1472.5 594,-1472.5"/>
+<polygon fill="none" stroke="#000000" points="594,-1472.5 594,-1507.5 847,-1507.5 847,-1472.5 594,-1472.5"/>
+<text text-anchor="start" x="620.3643" y="-1485.3" font-family="Arial Bold" font-size="18.00" fill="#000000">public.stocks</text>
+<text text-anchor="start" x="723.3819" y="-1485.3" font-family="Arial" font-size="14.00" fill="#000000"> </text>
+<text text-anchor="start" x="727.2725" y="-1485.3" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
+<polygon fill="none" stroke="#000000" points="594,-1442.5 594,-1472.5 847,-1472.5 847,-1442.5 594,-1442.5"/>
+<text text-anchor="start" x="601" y="-1453.9" font-family="Arial" font-size="14.00" fill="#000000">id </text>
+<text text-anchor="start" x="615.7798" y="-1453.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
+<polygon fill="none" stroke="#000000" points="594,-1412.5 594,-1442.5 847,-1442.5 847,-1412.5 594,-1412.5"/>
+<text text-anchor="start" x="601" y="-1423.9" font-family="Arial" font-size="14.00" fill="#000000">user_id </text>
+<text text-anchor="start" x="650.7882" y="-1423.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
+<polygon fill="none" stroke="#000000" points="594,-1382.5 594,-1412.5 847,-1412.5 847,-1382.5 594,-1382.5"/>
+<text text-anchor="start" x="601" y="-1393.9" font-family="Arial" font-size="14.00" fill="#000000">recruitment_id </text>
+<text text-anchor="start" x="693.5624" y="-1393.9" font-family="Arial" font-size="14.00" fill="#666666">[bigint]</text>
+<polygon fill="none" stroke="#000000" points="594,-1352.5 594,-1382.5 847,-1382.5 847,-1352.5 594,-1352.5"/>
+<text text-anchor="start" x="601" y="-1363.9" font-family="Arial" font-size="14.00" fill="#000000">created_at </text>
+<text text-anchor="start" x="671.028" y="-1363.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
+<polygon fill="none" stroke="#000000" points="594,-1322.5 594,-1352.5 847,-1352.5 847,-1322.5 594,-1322.5"/>
+<text text-anchor="start" x="600.6915" y="-1333.9" font-family="Arial" font-size="14.00" fill="#000000">updated_at </text>
+<text text-anchor="start" x="674.6241" y="-1333.9" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
+</g>
+<!-- public.stocks&#45;&gt;public.recruitments -->
+<g id="edge2" class="edge">
+<title>public.stocks:recruitment_id&#45;&gt;public.recruitments:id</title>
+<path fill="none" stroke="#000000" d="M583.6222,-1396.3388C545.5402,-1386.8539 569.0626,-1321.4186 594,-1280 611.6386,-1250.7039 644.3614,-1273.2961 662,-1244 684.1224,-1207.2569 704.8889,-1147.5 662,-1147.5"/>
+<polygon fill="#000000" stroke="#000000" points="584.062,-1396.3879 593.4996,-1401.9721 589.031,-1396.944 594,-1397.5 594,-1397.5 594,-1397.5 589.031,-1396.944 594.5004,-1393.0279 584.062,-1396.3879 584.062,-1396.3879"/>
+<text text-anchor="start" x="600.5005" y="-1407.5" font-family="Arial" font-size="10.00" fill="#000000">FOREIGN KEY (recruitment_id) REFERENCES recruitments(id) ON DELETE CASCADE</text>
 </g>
 </g>
 </svg>

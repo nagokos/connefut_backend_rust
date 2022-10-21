@@ -1,36 +1,36 @@
 # public.stocks
 
-## Description
+## 概要
 
-## Columns
+## カラム一覧
 
-| Name | Type | Default | Nullable | Children | Parents | Comment |
-| ---- | ---- | ------- | -------- | -------- | ------- | ------- |
+| 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
+| ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
 | id | bigint | nextval('stocks_id_seq'::regclass) | false |  |  |  |
-| recruitment_id | bigint |  | false |  | [public.recruitments](public.recruitments.md) |  |
 | user_id | bigint |  | false |  | [public.users](public.users.md) |  |
+| recruitment_id | bigint |  | false |  | [public.recruitments](public.recruitments.md) |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |
 
-## Constraints
+## 制約一覧
 
-| Name | Type | Definition |
+| 名前 | タイプ | 定義 |
 | ---- | ---- | ---------- |
 | stocks_user_id_fkey | FOREIGN KEY | FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE |
 | stocks_recruitment_id_fkey | FOREIGN KEY | FOREIGN KEY (recruitment_id) REFERENCES recruitments(id) ON DELETE CASCADE |
 | stocks_pkey | PRIMARY KEY | PRIMARY KEY (id) |
 | stocks_user_id_recruitment_id_key | UNIQUE | UNIQUE (user_id, recruitment_id) |
 
-## Indexes
+## INDEX一覧
 
-| Name | Definition |
+| 名前 | 定義 |
 | ---- | ---------- |
 | stocks_pkey | CREATE UNIQUE INDEX stocks_pkey ON public.stocks USING btree (id) |
 | stocks_user_id_recruitment_id_key | CREATE UNIQUE INDEX stocks_user_id_recruitment_id_key ON public.stocks USING btree (user_id, recruitment_id) |
 | stocks_user_id_idx | CREATE INDEX stocks_user_id_idx ON public.stocks USING btree (user_id) |
 | stocks_recruitment_id_idx | CREATE INDEX stocks_recruitment_id_idx ON public.stocks USING btree (recruitment_id) |
 
-## Relations
+## ER図
 
 ![er](public.stocks.svg)
 

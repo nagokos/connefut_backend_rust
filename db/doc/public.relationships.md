@@ -1,36 +1,36 @@
 # public.relationships
 
-## Description
+## 概要
 
-## Columns
+## カラム一覧
 
-| Name | Type | Default | Nullable | Children | Parents | Comment |
-| ---- | ---- | ------- | -------- | -------- | ------- | ------- |
+| 名前 | タイプ | デフォルト値 | Nullable | 子テーブル | 親テーブル | コメント |
+| ---- | ------ | ------------ | -------- | ---------- | ---------- | -------- |
 | id | bigint | nextval('relationships_id_seq'::regclass) | false |  |  |  |
-| follower_id | bigint |  | false |  | [public.users](public.users.md) |  |
 | followed_id | bigint |  | false |  | [public.users](public.users.md) |  |
+| follower_id | bigint |  | false |  | [public.users](public.users.md) |  |
 | created_at | timestamp with time zone |  | false |  |  |  |
 | updated_at | timestamp with time zone |  | false |  |  |  |
 
-## Constraints
+## 制約一覧
 
-| Name | Type | Definition |
+| 名前 | タイプ | 定義 |
 | ---- | ---- | ---------- |
 | relationships_followed_id_fkey | FOREIGN KEY | FOREIGN KEY (followed_id) REFERENCES users(id) ON DELETE CASCADE |
 | relationships_follower_id_fkey | FOREIGN KEY | FOREIGN KEY (follower_id) REFERENCES users(id) ON DELETE CASCADE |
 | relationships_pkey | PRIMARY KEY | PRIMARY KEY (id) |
-| relationships_follower_id_followed_id_key | UNIQUE | UNIQUE (follower_id, followed_id) |
+| relationships_followed_id_follower_id_key | UNIQUE | UNIQUE (followed_id, follower_id) |
 
-## Indexes
+## INDEX一覧
 
-| Name | Definition |
+| 名前 | 定義 |
 | ---- | ---------- |
 | relationships_pkey | CREATE UNIQUE INDEX relationships_pkey ON public.relationships USING btree (id) |
-| relationships_follower_id_followed_id_key | CREATE UNIQUE INDEX relationships_follower_id_followed_id_key ON public.relationships USING btree (follower_id, followed_id) |
+| relationships_followed_id_follower_id_key | CREATE UNIQUE INDEX relationships_followed_id_follower_id_key ON public.relationships USING btree (followed_id, follower_id) |
 | relationships_followed_id_idx | CREATE INDEX relationships_followed_id_idx ON public.relationships USING btree (followed_id) |
 | relationships_follower_id_idx | CREATE INDEX relationships_follower_id_idx ON public.relationships USING btree (follower_id) |
 
-## Relations
+## ER図
 
 ![er](public.relationships.svg)
 
