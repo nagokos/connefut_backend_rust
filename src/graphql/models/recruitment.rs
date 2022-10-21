@@ -91,6 +91,7 @@ impl Recruitment {
     pub async fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
     }
+    // 募集からストックを取得するときはN+1が発生してしまうため
     pub async fn stock(&self, ctx: &Context<'_>) -> async_graphql::Result<Stock> {
         let loaders = ctx.data_unchecked::<Loaders>();
         let viewer = match get_viewer(ctx).await {
