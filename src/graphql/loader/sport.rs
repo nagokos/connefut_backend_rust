@@ -20,7 +20,7 @@ impl Loader<i64> for SportLoader {
         let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(sql);
         let mut separated = query_builder.separated(", ");
         for key in keys.iter() {
-            separated.push(key);
+            separated.push_bind(key);
         }
         separated.push_unseparated(")");
         let query = query_builder.build_query_as::<Sport>();
