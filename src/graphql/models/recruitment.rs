@@ -205,6 +205,26 @@ pub async fn get_recruitments(
     }
 }
 
+#[tracing::instrument]
+pub async fn get_recruitment(pool: &PgPool, id: i64) -> Result<Option<Recruitment>> {
+    let sql = "SELECT * FROM recruitments WHERE id = $1";
+    let row = sqlx::query_as::<_, Recruitment>(sql)
+        .bind(id)
+        .fetch_optional(pool)
+        .await;
+
+    match row {
+        Ok(recruitment) => {
+            tracing::info!("get recruitment successed!!");
+            Ok(recruitment)
+        }
+        Err(e) => {
+            tracing::error!("get recruitment failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
 //? get_viewer_recruitmentsとの違いが公開済みかどうかでしかないためクエリだけ分岐で変えても？
 #[tracing::instrument]
 pub async fn get_user_recruitments(
