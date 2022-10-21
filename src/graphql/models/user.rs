@@ -4,7 +4,7 @@ use argon2::{
     Argon2, PasswordHash, PasswordVerifier,
 };
 use async_graphql::{Context, Enum, Object, ID};
-use base64::{encode_config, URL_SAFE};
+use base64::encode_config;
 use chrono::{DateTime, Duration, Local};
 use rand::Rng;
 use sqlx::{postgres::PgRow, PgPool, Row};
@@ -60,7 +60,7 @@ pub struct User {
 #[Object]
 impl User {
     pub async fn id(&self) -> ID {
-        encode_config(format!("User:{}", self.id), URL_SAFE).into()
+        id_encode("User", self.id).into()
     }
     async fn name(&self) -> &str {
         &self.name
