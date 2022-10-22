@@ -214,3 +214,44 @@ pub enum LoginUserInvalidInputField {
     Email,
     Password,
 }
+
+//* FollowUser */
+#[derive(InputObject)]
+pub struct FollowUserInput {
+    pub user_id: ID,
+}
+
+impl FollowUserInput {
+    pub async fn check_has_already_following(
+        &self,
+        pool: &PgPool,
+        viewer_id: i64,
+    ) -> Result<Option<FollowUserAlreadyFollowingError>> {
+        let user_id = id_decode(&self.user_id)?;
+        if is_already_following(pool, viewer_id, user_id).await? {
+            tracing::error!("This user is already following");
+            let error = FollowUserAlreadyFollowingError {
+                message: "このユーザーは既にフォローしています".to_string(),
+            };
+            Ok(Some(error))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+#[derive(Union)]
+pub enum FollowUserResult {
+    FollowUserAlreadyFollowingError(FollowUserAlreadyFollowingError),
+    FollowUserSuccess(FollowUserSuccess),
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct FollowUserAlreadyFollowingError {
+    pub message: String,
+}
+
+#[derive(SimpleObject)]
+pub struct FollowUserSuccess {
+    pub user: User,
+}
