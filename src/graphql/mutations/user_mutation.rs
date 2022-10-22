@@ -255,3 +255,14 @@ pub struct FollowUserAlreadyFollowingError {
 pub struct FollowUserSuccess {
     pub user: User,
 }
+
+//* UnfollowUser */
+#[derive(InputObject)]
+pub struct UnfollowUserInput {
+    pub user_id: ID,
+}
+
+#[derive(SimpleObject)]
+pub struct UnfollowUserResult {
+    pub user: User,
+}
