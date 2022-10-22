@@ -1,11 +1,14 @@
 use anyhow::Result;
-use async_graphql::{Enum, InputObject, SimpleObject, Union};
+use async_graphql::{Enum, InputObject, SimpleObject, Union, ID};
 use fancy_regex::Regex;
 use once_cell::sync::Lazy;
 use sqlx::PgPool;
 use validator::{Validate, ValidationError};
 
-use crate::graphql::models::user::{is_already_exists_email, Viewer};
+use crate::graphql::{
+    id_decode,
+    models::user::{is_already_exists_email, is_already_following, User, Viewer},
+};
 
 static PASSWORD_FORMAT: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(?=.*?[a-zA-Z])(?=.*?\d)[a-zA-Z\d]{8,}$").unwrap());
@@ -75,22 +78,14 @@ impl RegisterUserInput {
         &self,
         pool: &PgPool,
     ) -> Result<Option<RegisterUserAlreadyExistsEmailError>> {
-        let is_exists = is_already_exists_email(&self.email, pool).await;
-        match is_exists {
-            Ok(is_exists) => {
-                if is_exists {
-                    tracing::error!("This email address already exists");
-                    let error = RegisterUserAlreadyExistsEmailError {
-                        message: String::from("このメールアドレスは既に存在します"),
-                    };
-                    return Ok(Some(error));
-                }
-                Ok(None)
-            }
-            Err(e) => {
-                tracing::error!("{:?}", e);
-                Err(e)
-            }
+        if is_already_exists_email(&self.email, pool).await? {
+            tracing::error!("This email address already exists");
+            let error = RegisterUserAlreadyExistsEmailError {
+                message: String::from("このメールアドレスは既に存在します"),
+            };
+            Ok(Some(error))
+        } else {
+            Ok(None)
         }
     }
 }
