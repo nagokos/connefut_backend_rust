@@ -7,8 +7,8 @@ use self::{
     stock_mutation::AddStockAlreadyStockedError,
     tag_mutation::CreateTagAlreadyExistsNameError,
     user_mutation::{
-        LoginUserAuthenticationError, LoginUserInvalidInputError, LoginUserNotFoundError,
-        RegisterUserAlreadyExistsEmailError, RegisterUserInvalidInputError,
+        FollowUserAlreadyFollowingError, LoginUserAuthenticationError, LoginUserInvalidInputError,
+        LoginUserNotFoundError, RegisterUserAlreadyExistsEmailError, RegisterUserInvalidInputError,
     },
 };
 
@@ -30,4 +30,5 @@ pub enum Error {
     UpdateRecruitmentInvalidInputError(UpdateRecruitmentInvalidInputError),
     CreateTagAlreadyExistsNameError(CreateTagAlreadyExistsNameError),
     AddStockAlreadyStockedError(AddStockAlreadyStockedError),
+    FollowUserAlreadyFollowingError(FollowUserAlreadyFollowingError),
 }
