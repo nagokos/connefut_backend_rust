@@ -395,3 +395,67 @@ fn generate_password_hash(password: &[u8]) -> Result<String> {
         }
     }
 }
+
+#[tracing::instrument]
+pub async fn is_already_following(
+    pool: &PgPool,
+    follower_id: i64,
+    followed_id: i64,
+) -> Result<bool> {
+    let sql = r#"
+        SELECT EXISTS (
+            SELECT id
+            FROM relationships
+            WHERE follower_id = $1
+            AND followed_id = $2
+        )
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(follower_id)
+        .bind(followed_id)
+        .map(|row: PgRow| row.get::<bool, _>(0))
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(is_following) => {
+            tracing::info!("is already following successed!!");
+            Ok(is_following)
+        }
+        Err(e) => {
+            tracing::error!("is already following failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn follow(pool: &PgPool, follower_id: i64, followed_id: i64) -> Result<()> {
+    let sql = r#"
+        INSERT INTO relationships
+            (follower_id, followed_id, created_at, updated_at)
+        VALUES
+            ($1, $2, $3, $4)
+    "#;
+
+    let now = Local::now();
+    let row = sqlx::query(sql)
+        .bind(follower_id)
+        .bind(followed_id)
+        .bind(now)
+        .bind(now)
+        .execute(pool)
+        .await;
+
+    match row {
+        Ok(_) => {
+            tracing::info!("follow user successed!!");
+            Ok(())
+        }
+        Err(e) => {
+            tracing::error!("follow user failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
