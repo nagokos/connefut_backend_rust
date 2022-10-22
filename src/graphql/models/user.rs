@@ -13,6 +13,7 @@ use std::ops::Add;
 use crate::{
     database::get_db_pool,
     graphql::{
+        auth::get_viewer,
         id_encode,
         mail::sender::send_email_verification_code,
         mutations::user_mutation::RegisterUserInput,
@@ -82,6 +83,30 @@ impl User {
     }
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
+    }
+    async fn viewer_is_following(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
+        let pool = get_db_pool(ctx).await?;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Ok(false),
+        };
+        let sql = r#"
+            SELECT EXISTS (
+                SELECT id
+                FROM relationships
+                WHERE follower_id = $1
+                AND followed_id = $2
+            )
+        "#;
+
+        let is_following = sqlx::query(sql)
+            .bind(viewer.id)
+            .bind(self.id)
+            .map(|row: PgRow| row.get::<bool, _>(0))
+            .fetch_one(&**pool)
+            .await?;
+
+        Ok(is_following)
     }
     async fn recruitments(
         &self,
