@@ -7,10 +7,14 @@ use crate::{
             get_viewer,
             jwt::{self, Claims},
         },
-        models::user::{self, authentication, get_user_from_email, Viewer},
+        id_decode,
+        models::user::{
+            self, authentication, follow, get_user_from_email, get_user_from_id, Viewer,
+        },
         mutations::user_mutation::{
-            LoginUserAuthenticationError, LoginUserInput, LoginUserNotFoundError, LoginUserResult,
-            LoginUserSuccess, RegisterUserInput, RegisterUserResult, RegisterUserSuccess,
+            FollowUserInput, FollowUserResult, FollowUserSuccess, LoginUserAuthenticationError,
+            LoginUserInput, LoginUserNotFoundError, LoginUserResult, LoginUserSuccess,
+            RegisterUserInput, RegisterUserResult, RegisterUserSuccess,
         },
     },
 };
@@ -117,5 +121,33 @@ impl UserMutation {
             }
             Err(e) => Err(e.into()),
         }
+    }
+    async fn follow_user(
+        &self,
+        ctx: &Context<'_>,
+        input: FollowUserInput,
+    ) -> Result<FollowUserResult> {
+        let pool = get_db_pool(ctx).await?;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Err(async_graphql::Error::new("Please login")),
+        };
+
+        if let Some(e) = input.check_has_already_following(pool, viewer.id).await? {
+            return Ok(e.into());
+        }
+
+        let user_id = id_decode(&input.user_id)?;
+        follow(pool, viewer.id, user_id).await?;
+        let user = match get_user_from_id(pool, user_id).await? {
+            Some(user) => user,
+            None => {
+                tracing::error!("user not found...");
+                return Err(async_graphql::Error::new("user not found..."));
+            }
+        };
+
+        let success = FollowUserSuccess { user };
+        Ok(success.into())
     }
 }

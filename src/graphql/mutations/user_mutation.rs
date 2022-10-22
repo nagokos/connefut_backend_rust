@@ -1,11 +1,14 @@
 use anyhow::Result;
-use async_graphql::{Enum, InputObject, SimpleObject, Union};
+use async_graphql::{Enum, InputObject, SimpleObject, Union, ID};
 use fancy_regex::Regex;
 use once_cell::sync::Lazy;
 use sqlx::PgPool;
 use validator::{Validate, ValidationError};
 
-use crate::graphql::models::user::{is_already_exists_email, Viewer};
+use crate::graphql::{
+    id_decode,
+    models::user::{is_already_exists_email, is_already_following, User, Viewer},
+};
 
 static PASSWORD_FORMAT: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^(?=.*?[a-zA-Z])(?=.*?\d)[a-zA-Z\d]{8,}$").unwrap());
@@ -75,22 +78,14 @@ impl RegisterUserInput {
         &self,
         pool: &PgPool,
     ) -> Result<Option<RegisterUserAlreadyExistsEmailError>> {
-        let is_exists = is_already_exists_email(&self.email, pool).await;
-        match is_exists {
-            Ok(is_exists) => {
-                if is_exists {
-                    tracing::error!("This email address already exists");
-                    let error = RegisterUserAlreadyExistsEmailError {
-                        message: String::from("このメールアドレスは既に存在します"),
-                    };
-                    return Ok(Some(error));
-                }
-                Ok(None)
-            }
-            Err(e) => {
-                tracing::error!("{:?}", e);
-                Err(e)
-            }
+        if is_already_exists_email(&self.email, pool).await? {
+            tracing::error!("This email address already exists");
+            let error = RegisterUserAlreadyExistsEmailError {
+                message: String::from("このメールアドレスは既に存在します"),
+            };
+            Ok(Some(error))
+        } else {
+            Ok(None)
         }
     }
 }
@@ -218,4 +213,45 @@ pub enum LoginUserInvalidInputField {
     Name,
     Email,
     Password,
+}
+
+//* FollowUser */
+#[derive(InputObject)]
+pub struct FollowUserInput {
+    pub user_id: ID,
+}
+
+impl FollowUserInput {
+    pub async fn check_has_already_following(
+        &self,
+        pool: &PgPool,
+        viewer_id: i64,
+    ) -> Result<Option<FollowUserAlreadyFollowingError>> {
+        let user_id = id_decode(&self.user_id)?;
+        if is_already_following(pool, viewer_id, user_id).await? {
+            tracing::error!("This user is already following");
+            let error = FollowUserAlreadyFollowingError {
+                message: "このユーザーは既にフォローしています".to_string(),
+            };
+            Ok(Some(error))
+        } else {
+            Ok(None)
+        }
+    }
+}
+
+#[derive(Union)]
+pub enum FollowUserResult {
+    FollowUserAlreadyFollowingError(FollowUserAlreadyFollowingError),
+    FollowUserSuccess(FollowUserSuccess),
+}
+
+#[derive(SimpleObject, Debug)]
+pub struct FollowUserAlreadyFollowingError {
+    pub message: String,
+}
+
+#[derive(SimpleObject)]
+pub struct FollowUserSuccess {
+    pub user: User,
 }
