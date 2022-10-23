@@ -9,12 +9,13 @@ use crate::{
         },
         id_decode,
         models::user::{
-            self, authentication, follow, get_user_from_email, get_user_from_id, Viewer,
+            self, authentication, follow, get_user_from_email, get_user_from_id, unfollow, Viewer,
         },
         mutations::user_mutation::{
             FollowUserInput, FollowUserResult, FollowUserSuccess, LoginUserAuthenticationError,
             LoginUserInput, LoginUserNotFoundError, LoginUserResult, LoginUserSuccess,
-            RegisterUserInput, RegisterUserResult, RegisterUserSuccess,
+            RegisterUserInput, RegisterUserResult, RegisterUserSuccess, UnfollowUserInput,
+            UnfollowUserResult,
         },
     },
 };
@@ -149,5 +150,28 @@ impl UserMutation {
 
         let success = FollowUserSuccess { user };
         Ok(success.into())
+    }
+    async fn unfollow_user(
+        &self,
+        ctx: &Context<'_>,
+        input: UnfollowUserInput,
+    ) -> Result<UnfollowUserResult> {
+        let pool = get_db_pool(ctx).await?;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Err(async_graphql::Error::new("Please login")),
+        };
+
+        let user_id = id_decode(&input.user_id)?;
+        unfollow(pool, viewer.id, user_id).await?;
+        let user = match get_user_from_id(pool, user_id).await? {
+            Some(user) => user,
+            None => {
+                tracing::error!("user not found");
+                return Err(async_graphql::Error::new("user not found"));
+            }
+        };
+
+        Ok(UnfollowUserResult { user })
     }
 }

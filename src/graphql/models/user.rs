@@ -459,3 +459,29 @@ pub async fn follow(pool: &PgPool, follower_id: i64, followed_id: i64) -> Result
         }
     }
 }
+
+#[tracing::instrument]
+pub async fn unfollow(pool: &PgPool, follower_id: i64, followed_id: i64) -> Result<()> {
+    let sql = r#"
+        DELETE FROM relationships 
+        WHERE follower_id = $1
+        AND followed_id = $2
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(follower_id)
+        .bind(followed_id)
+        .execute(pool)
+        .await;
+
+    match row {
+        Ok(_) => {
+            tracing::info!("unfollow user successed!!");
+            Ok(())
+        }
+        Err(e) => {
+            tracing::error!("unfollow user failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
