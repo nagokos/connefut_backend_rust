@@ -15,10 +15,15 @@ use crate::{
     graphql::{
         auth::get_viewer,
         id_encode,
+        loader::get_loaders,
         mail::sender::send_email_verification_code,
         mutations::user_mutation::RegisterUserInput,
-        resolvers::recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
+        resolvers::{
+            recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
+            user_resolver::{FollowingConnection, UserEdge},
+        },
         utils::pagination::{PageInfo, SearchParams},
+        FieldGuard,
     },
 };
 
@@ -66,21 +71,25 @@ impl User {
     async fn name(&self) -> &str {
         &self.name
     }
-    async fn email(&self) -> &str {
-        &self.email
+    #[graphql(guard = "FieldGuard::new(self.id)")]
+    async fn email(&self) -> Option<async_graphql::Result<Option<&str>>> {
+        Some(Ok(self.email.as_str().into()))
     }
+    #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn unverified_email(&self) -> Option<&str> {
         self.unverified_email.as_deref()
     }
     async fn avatar(&self) -> &str {
         &self.avatar
     }
+    #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn role(&self) -> UserRole {
         self.role
     }
     async fn introduction(&self) -> Option<&str> {
         self.introduction.as_deref()
     }
+    #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
     }
