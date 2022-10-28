@@ -34,7 +34,7 @@ use super::recruitment::{
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
 #[sqlx(type_name = "user_role")]
-#[sqlx(rename_all = "camelCase")]
+#[sqlx(rename_all = "lowercase")]
 pub enum UserRole {
     General,
     Admin,
@@ -42,7 +42,7 @@ pub enum UserRole {
 
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
 #[sqlx(type_name = "email_verification_status")]
-#[sqlx(rename_all = "camelCase")]
+#[sqlx(rename_all = "lowercase")]
 pub enum EmailVerificationStatus {
     Pending,
     Verified,
