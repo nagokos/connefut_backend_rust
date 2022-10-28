@@ -93,29 +93,25 @@ impl User {
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
     }
+    // todo is_following_viewerの追加(このユーザーがviewerをフォローしているかを返す)
+    // todo async fn is_following_viewer() -> Option<async_graphql::Result<bool>>
+
+    // todo N+1に対応
+    // このユーザーがViewerからフォローされているか
     async fn viewer_is_following(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
-        let pool = get_db_pool(ctx).await?;
+        let loaders = get_loaders(ctx).await;
         let viewer = match get_viewer(ctx).await {
             Some(viewer) => viewer,
-            None => return Ok(false),
+            None => return Ok(false), // ログインしてない時は全てfalse
         };
-        let sql = r#"
-            SELECT EXISTS (
-                SELECT id
-                FROM relationships
-                WHERE follower_id = $1
-                AND followed_id = $2
-            )
-        "#;
-
-        let is_following = sqlx::query(sql)
-            .bind(viewer.id)
-            .bind(self.id)
-            .map(|row: PgRow| row.get::<bool, _>(0))
-            .fetch_one(&**pool)
+        let viewer_is_following = loaders
+            .following_loader
+            .load_one([viewer.id, self.id])
             .await?;
-
-        Ok(is_following)
+        match viewer_is_following {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
     }
     async fn recruitments(
         &self,
