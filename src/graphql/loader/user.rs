@@ -1,7 +1,7 @@
 use async_graphql::dataloader::*;
 use async_graphql::*;
 use async_trait::async_trait;
-use sqlx::{PgPool, Postgres, QueryBuilder};
+use sqlx::{PgPool, Postgres, QueryBuilder, Row};
 use std::collections::HashMap;
 use std::sync::Arc;
 
@@ -21,7 +21,7 @@ impl Loader<i64> for UserLoader {
         let mut query_builder = QueryBuilder::<Postgres>::new(sql);
         let mut separated = query_builder.separated(", ");
         for key in keys.iter() {
-            separated.push_bind(*key as i64);
+            separated.push_bind(key);
         }
         separated.push_unseparated(") ");
         let query = query_builder.build_query_as::<User>();
