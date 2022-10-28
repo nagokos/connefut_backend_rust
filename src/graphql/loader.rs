@@ -47,3 +47,7 @@ impl Loaders {
         }
     }
 }
+
+pub async fn get_loaders<'ctx>(ctx: &Context<'ctx>) -> &'ctx Loaders {
+    ctx.data_unchecked::<Loaders>()
+}
