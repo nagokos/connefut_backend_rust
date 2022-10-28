@@ -151,6 +151,45 @@ impl User {
         };
         Ok(RecruitmentConnection { edges, page_info })
     }
+    async fn following(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<ID>,
+        first: Option<i32>,
+    ) -> async_graphql::Result<FollowingConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let params = SearchParams::new(first, after)?;
+
+        let following = get_following(pool, self.id, params).await?;
+
+        let edges: Vec<Option<UserEdge>> = following
+            .iter()
+            .map(|user| {
+                UserEdge {
+                    node: user.to_owned(),
+                }
+                .into()
+            })
+            .collect();
+
+        let page_info = match following.last() {
+            Some(user) => {
+                let has_next_page = is_next_following_edge(pool, self.id, user.id).await?;
+                let end_cursor = Some(id_encode("User", user.id));
+                PageInfo {
+                    has_next_page,
+                    end_cursor,
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
+        Ok(FollowingConnection {
+            edges: edges.into(),
+            page_info,
+        })
+    }
 }
 
 #[derive(Clone, Debug)]
