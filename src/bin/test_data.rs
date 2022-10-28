@@ -93,7 +93,7 @@ async fn create_users(pool: &PgPool) -> Result<()> {
 
     let now = Local::now();
     let mut query_builder = QueryBuilder::<Postgres>::new(sql);
-    query_builder.push_values(users, |mut b, u| {
+    query_builder.push_values(users.clone(), |mut b, u| {
         b.push_bind(u.name)
             .push_bind(u.email)
             .push_bind(u.unverified_email)
@@ -111,6 +111,19 @@ async fn create_users(pool: &PgPool) -> Result<()> {
     let query = query_builder.build();
     query.execute(pool).await?;
     tracing::info!("create users data!!");
+
+    let sql = "INSERT INTO relationships (follower_id, followed_id, created_at, updated_at) ";
+    let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new(sql);
+    query_builder.push_values(users, |mut b, user| {
+        b.push_bind(1)
+            .push_bind(user.id + 1)
+            .push_bind(now)
+            .push_bind(now);
+    });
+
+    let query = query_builder.build();
+    query.execute(pool).await?;
+    tracing::info!("create relationships data!!");
     Ok(())
 }
 
