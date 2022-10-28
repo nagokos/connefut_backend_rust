@@ -475,6 +475,85 @@ pub async fn is_already_following(
 }
 
 #[tracing::instrument]
+pub async fn get_following(
+    pool: &PgPool,
+    follower_id: i64,
+    params: SearchParams,
+) -> Result<Vec<User>> {
+    let sql = r#"
+        SELECT u.*
+        FROM users as u
+        INNER JOIN relationships as r
+            ON u.id = r.followed_id
+        WHERE r.follower_id = $1
+        AND ($2 OR r.id < (SELECT id
+                           FROM relationships
+                           WHERE follower_id = $3
+                           AND followed_id = $4))
+        ORDER BY r.id DESC
+        LIMIT $5
+    "#;
+
+    let rows = sqlx::query_as::<_, User>(sql)
+        .bind(follower_id)
+        .bind(!params.use_after)
+        .bind(follower_id)
+        .bind(params.after)
+        .bind(params.num_rows)
+        .fetch_all(pool)
+        .await;
+
+    match rows {
+        Ok(following) => {
+            tracing::info!("get following successed!!");
+            Ok(following)
+        }
+        Err(e) => {
+            tracing::error!("get following failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn is_next_following_edge(
+    pool: &PgPool,
+    follower_id: i64,
+    followed_id: i64,
+) -> Result<bool> {
+    let sql = r#"
+        SELECT EXISTS (
+            SELECT id
+            FROM relationships
+            WHERE id < (SELECT id 
+                        FROM relationships 
+                        WHERE follower_id = $1 
+                        AND followed_id = $2)
+            ORDER BY id DESC
+            LIMIT 1
+        )
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(follower_id)
+        .bind(followed_id)
+        .map(|row: PgRow| row.get::<bool, _>(0))
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(is_next) => {
+            tracing::info!("is next following edge successed!!");
+            Ok(is_next)
+        }
+        Err(e) => {
+            tracing::error!("is next following edge failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
 pub async fn follow(pool: &PgPool, follower_id: i64, followed_id: i64) -> Result<()> {
     let sql = r#"
         INSERT INTO relationships
