@@ -33,3 +33,43 @@ impl Loader<i64> for UserLoader {
         Ok(users_hash)
     }
 }
+
+pub struct FollowingLoader {
+    pub pool: Arc<PgPool>,
+}
+
+#[async_trait]
+impl Loader<[i64; 2]> for FollowingLoader {
+    type Value = ();
+    type Error = Arc<sqlx::Error>;
+
+    // keysは[follower_id, followed_id]の形で送られてくる
+    async fn load(&self, keys: &[[i64; 2]]) -> Result<HashMap<[i64; 2], Self::Value>, Self::Error> {
+        let sql = "SELECT follower_id, followed_id FROM relationships WHERE (follower_id, followed_id) IN";
+        let mut query_builder = QueryBuilder::<Postgres>::new(sql);
+        query_builder.push_tuples(keys, |mut b, key| {
+            b.push_bind(key[0]).push_bind(key[1]);
+        });
+        let query = query_builder.build();
+        let result = query.fetch_all(&*self.pool).await;
+        match result {
+            Ok(rows) => {
+                tracing::info!("FollowingLoader load successed!!");
+                // {[follower_id, followed_id], ()}の形に整形する
+                let following_hash: HashMap<[i64; 2], ()> = rows
+                    .iter()
+                    .map(|row| {
+                        let follower_id = row.get::<i64, _>("follower_id");
+                        let followed_id = row.get::<i64, _>("followed_id");
+                        ([follower_id, followed_id], ())
+                    })
+                    .collect();
+                Ok(following_hash)
+            }
+            Err(e) => {
+                tracing::error!("FollowingLoader load failed: {:?}", e);
+                Err(e.into())
+            }
+        }
+    }
+}
