@@ -41,6 +41,7 @@ pub struct RecruitmentQuery;
 
 #[Object]
 impl RecruitmentQuery {
+    /// 公開中の募集のリストを取得する
     async fn recruitments(
         &self,
         ctx: &Context<'_>,
@@ -132,6 +133,7 @@ pub struct RecruitmentMutation;
 
 #[Object]
 impl RecruitmentMutation {
+    /// 募集を作成する
     async fn create_recruitment(
         &self,
         ctx: &Context<'_>,
@@ -151,6 +153,7 @@ impl RecruitmentMutation {
         let success = CreateRecruitmentSuccess { recruitment_edge };
         Ok(success.into())
     }
+    /// 募集の更新をする
     async fn update_recruitment(
         &self,
         ctx: &Context<'_>,
