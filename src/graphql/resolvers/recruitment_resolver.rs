@@ -49,22 +49,19 @@ impl RecruitmentQuery {
         first: Option<i32>,
     ) -> Result<RecruitmentConnection> {
         let pool = get_db_pool(ctx).await?;
-        let search_params = SearchParams::new(first, after)?;
+        let search_params = SearchParams::new(after, first)?;
 
         let recruitments = get_recruitments(pool, search_params).await?;
 
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: String::default(),
+        let edges: Vec<Option<RecruitmentEdge>> = recruitments
+            .iter()
+            .map(|recruitment| {
+                RecruitmentEdge {
                     node: recruitment.to_owned(),
-                })
-                .collect::<Vec<RecruitmentEdge>>();
-            Some(edges)
-        };
+                }
+                .into()
+            })
+            .collect();
 
         let page_info = match recruitments.last() {
             Some(recruitment) => {
@@ -80,51 +77,10 @@ impl RecruitmentQuery {
             None => Default::default(),
         };
 
-        Ok(RecruitmentConnection { page_info, edges })
-    }
-    async fn viewer_recruitments(
-        &self,
-        ctx: &Context<'_>,
-        after: Option<ID>,
-        first: Option<i32>,
-    ) -> Result<RecruitmentConnection> {
-        let pool = get_db_pool(ctx).await?;
-        let search_params = SearchParams::new(first, after)?;
-        let viewer = match get_viewer(ctx).await {
-            Some(viewer) => viewer,
-            None => return Err(async_graphql::Error::new("Please login")),
-        };
-
-        let recruitments = get_viewer_recruitments(pool, search_params, viewer.id).await?;
-
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: String::default(),
-                    node: recruitment.to_owned(),
-                })
-                .collect::<Vec<RecruitmentEdge>>();
-            Some(edges)
-        };
-
-        let page_info = match recruitments.last() {
-            Some(recruitment) => {
-                let is_next = is_next_viewer_recruitment(pool, recruitment.id, viewer.id).await?;
-                let encoded_id =
-                    encode_config(format!("Recruitment:{}", recruitment.id), base64::URL_SAFE);
-                PageInfo {
-                    has_next_page: is_next,
-                    end_cursor: Some(encoded_id),
-                    ..Default::default()
-                }
-            }
-            None => Default::default(),
-        };
-
-        Ok(RecruitmentConnection { edges, page_info })
+        Ok(RecruitmentConnection {
+            page_info,
+            edges: edges.into(),
+        })
     }
 }
 
@@ -146,10 +102,7 @@ impl RecruitmentMutation {
         };
 
         let recruitment = recruitment::create(pool, input, viewer.id).await?;
-        let recruitment_edge = RecruitmentEdge {
-            cursor: String::default(),
-            node: recruitment,
-        };
+        let recruitment_edge = RecruitmentEdge { node: recruitment };
         let success = CreateRecruitmentSuccess { recruitment_edge };
         Ok(success.into())
     }
@@ -167,10 +120,7 @@ impl RecruitmentMutation {
         };
 
         let recruitment = recruitment::update(pool, input, id_decode(&id)?, viewer.id).await?;
-        let recruitment_edge = RecruitmentEdge {
-            cursor: String::default(),
-            node: recruitment,
-        };
+        let recruitment_edge = RecruitmentEdge { node: recruitment };
         let success = UpdateRecruitmentSuccess { recruitment_edge };
         Ok(success.into())
     }
