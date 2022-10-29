@@ -17,7 +17,7 @@ use crate::{
 
 #[derive(SimpleObject, Debug)]
 pub struct RecruitmentConnection {
-    pub edges: Option<Vec<RecruitmentEdge>>,
+    pub edges: Option<Vec<Option<RecruitmentEdge>>>,
     pub page_info: PageInfo,
 }
 
