@@ -8,6 +8,7 @@ pub struct SportQuery;
 
 #[Object]
 impl SportQuery {
+    /// スポーツのリストを取得する
     async fn sports(&self, ctx: &Context<'_>) -> Result<Vec<Sport>> {
         let pool = get_db_pool(ctx).await?;
         let sports = get_sports(pool).await?;

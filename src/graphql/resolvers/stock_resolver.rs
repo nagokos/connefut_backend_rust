@@ -23,6 +23,7 @@ pub struct StockMutation;
 
 #[Object]
 impl StockMutation {
+    /// 募集をストックする
     async fn add_stock(&self, ctx: &Context<'_>, input: AddStockInput) -> Result<AddStockResult> {
         let pool = get_db_pool(ctx).await?;
         let viewer = match get_viewer(ctx).await {
@@ -52,14 +53,12 @@ impl StockMutation {
                 recruitment_id: recruitment.id,
                 viewer_has_stocked: true,
             },
-            recruitment_edge: RecruitmentEdge {
-                cursor: String::default(),
-                node: recruitment,
-            },
+            recruitment_edge: RecruitmentEdge { node: recruitment },
         };
 
         Ok(success.into())
     }
+    /// 募集のストックを外す
     async fn remove_stock(
         &self,
         ctx: &Context<'_>,
