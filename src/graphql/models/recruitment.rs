@@ -48,7 +48,7 @@ pub enum RecruitmentStatus {
 pub struct Recruitment {
     pub id: i64,
     pub title: String,
-    pub category: Category,
+    pub category: RecruitmentCategory,
     pub venue: Option<String>,
     pub venue_lat: Option<f64>,
     pub venue_lng: Option<f64>,
