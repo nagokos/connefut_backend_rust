@@ -1,15 +1,12 @@
-use async_graphql::{Context, Object, Result, ID};
-use base64::{encode_config, URL_SAFE};
+use async_graphql::{Context, Object, Result, SimpleObject, ID};
+use base64::encode_config;
 
 use crate::{
     database::get_db_pool,
     graphql::{
         auth::get_viewer,
-        id_decode,
-        models::recruitment::{
-            self, get_recruitments, get_viewer_recruitments, is_next_recruitment,
-            is_next_viewer_recruitment, Recruitment,
-        },
+        id_decode, id_encode,
+        models::recruitment::{self, get_recruitments, is_next_recruitment, Recruitment},
         mutations::recruitment_mutation::{
             CreateRecruitmentResult, CreateRecruitmentSuccess, RecruitmentInput,
             UpdateRecruitmentResult, UpdateRecruitmentSuccess,
@@ -18,7 +15,7 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
+#[derive(SimpleObject, Debug)]
 pub struct RecruitmentConnection {
     pub edges: Option<Vec<RecruitmentEdge>>,
     pub page_info: PageInfo,
