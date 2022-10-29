@@ -45,12 +45,10 @@ impl Loader<i64> for TagLoader {
                 name: name.to_string(),
             };
             let recruitment_id: i64 = row.get("recruitment_id");
-            if let Some(current_tags) = recruitment_tags_hash.get(&recruitment_id) {
-                let mut new_tags = current_tags.to_owned();
-                new_tags.push(tag);
-                recruitment_tags_hash.insert(recruitment_id, new_tags)
+            if let Some(current_tags) = recruitment_tags_hash.get_mut(&recruitment_id) {
+                current_tags.push(tag);
             } else {
-                recruitment_tags_hash.insert(recruitment_id, vec![tag])
+                recruitment_tags_hash.insert(recruitment_id, vec![tag]);
             };
         }
         Ok(recruitment_tags_hash)

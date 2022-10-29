@@ -5,7 +5,7 @@ use chrono::{DateTime, Local};
 use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::graphql::{
-    auth::get_viewer, id_decode, loader::Loaders,
+    auth::get_viewer, id_decode, loader::get_loaders,
     mutations::recruitment_mutation::RecruitmentInput, utils::pagination::SearchParams,
 };
 
@@ -91,9 +91,10 @@ impl Recruitment {
     pub async fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
     }
+    // todo stockではなくてviewer_has_stockedを作ればいい
     // 募集からストックを取得するときはN+1が発生してしまうため
     pub async fn stock(&self, ctx: &Context<'_>) -> async_graphql::Result<Stock> {
-        let loaders = ctx.data_unchecked::<Loaders>();
+        let loaders = get_loaders(ctx).await;
         let viewer = match get_viewer(ctx).await {
             Some(viewer) => viewer,
             None => {
@@ -128,7 +129,7 @@ impl Recruitment {
         }
     }
     pub async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
-        let loaders = ctx.data_unchecked::<Loaders>();
+        let loaders = get_loaders(ctx).await;
         let user = loaders.user_loader.load_one(self.user_id).await?;
         match user {
             Some(user) => Ok(user),
@@ -142,7 +143,7 @@ impl Recruitment {
         self.status
     }
     pub async fn tags(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Tag>> {
-        let loaders = ctx.data_unchecked::<Loaders>();
+        let loaders = get_loaders(ctx).await;
         let tags = loaders.tag_loader.load_one(self.id).await?;
         match tags {
             Some(tags) => Ok(tags),
@@ -150,7 +151,7 @@ impl Recruitment {
         }
     }
     pub async fn prefecture(&self, ctx: &Context<'_>) -> async_graphql::Result<Prefecture> {
-        let loaders = ctx.data_unchecked::<Loaders>();
+        let loaders = get_loaders(ctx).await;
         let prefecture = loaders
             .prefecture_loader
             .load_one(self.prefecture_id)
@@ -163,7 +164,7 @@ impl Recruitment {
         }
     }
     pub async fn sport(&self, ctx: &Context<'_>) -> async_graphql::Result<Sport> {
-        let loaders = ctx.data_unchecked::<Loaders>();
+        let loaders = get_loaders(ctx).await;
         let sport = loaders.sport_loader.load_one(self.sport_id).await?;
         match sport {
             Some(sport) => Ok(sport),

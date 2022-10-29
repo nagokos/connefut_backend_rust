@@ -1,4 +1,4 @@
-use async_graphql::{Context, Object, Result};
+use async_graphql::{Context, Object, Result, SimpleObject, ID};
 
 use crate::{
     database::get_db_pool,
@@ -7,9 +7,10 @@ use crate::{
             get_viewer,
             jwt::{self, Claims},
         },
-        id_decode,
+        id_decode, id_encode,
         models::user::{
-            self, authentication, follow, get_user_from_email, get_user_from_id, unfollow, Viewer,
+            self, authentication, follow, get_user_from_email, get_user_from_id, unfollow, User,
+            Viewer,
         },
         mutations::user_mutation::{
             FollowUserInput, FollowUserResult, FollowUserSuccess, LoginUserAuthenticationError,
@@ -17,8 +18,29 @@ use crate::{
             RegisterUserInput, RegisterUserResult, RegisterUserSuccess, UnfollowUserInput,
             UnfollowUserResult,
         },
+        utils::pagination::PageInfo,
     },
 };
+
+#[derive(SimpleObject)]
+pub struct FollowingConnection {
+    pub edges: Option<Vec<Option<UserEdge>>>,
+    pub page_info: PageInfo,
+}
+
+pub struct UserEdge {
+    pub node: User,
+}
+
+#[Object]
+impl UserEdge {
+    async fn cursor(&self) -> ID {
+        id_encode("User", self.node.id).into()
+    }
+    async fn node(&self) -> Option<User> {
+        self.node.clone().into()
+    }
+}
 
 #[derive(Default)]
 pub struct UserQuery;

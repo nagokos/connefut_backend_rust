@@ -15,10 +15,15 @@ use crate::{
     graphql::{
         auth::get_viewer,
         id_encode,
+        loader::get_loaders,
         mail::sender::send_email_verification_code,
         mutations::user_mutation::RegisterUserInput,
-        resolvers::recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
+        resolvers::{
+            recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
+            user_resolver::{FollowingConnection, UserEdge},
+        },
         utils::pagination::{PageInfo, SearchParams},
+        FieldGuard,
     },
 };
 
@@ -66,47 +71,47 @@ impl User {
     async fn name(&self) -> &str {
         &self.name
     }
-    async fn email(&self) -> &str {
-        &self.email
+    #[graphql(guard = "FieldGuard::new(self.id)")]
+    async fn email(&self) -> Option<async_graphql::Result<Option<&str>>> {
+        Some(Ok(self.email.as_str().into()))
     }
+    #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn unverified_email(&self) -> Option<&str> {
         self.unverified_email.as_deref()
     }
     async fn avatar(&self) -> &str {
         &self.avatar
     }
+    #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn role(&self) -> UserRole {
         self.role
     }
     async fn introduction(&self) -> Option<&str> {
         self.introduction.as_deref()
     }
+    #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
     }
+    // todo is_following_viewerの追加(このユーザーがviewerをフォローしているかを返す)
+    // todo async fn is_following_viewer() -> Option<async_graphql::Result<bool>>
+
+    // todo N+1に対応
+    // このユーザーがViewerからフォローされているか
     async fn viewer_is_following(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
-        let pool = get_db_pool(ctx).await?;
+        let loaders = get_loaders(ctx).await;
         let viewer = match get_viewer(ctx).await {
             Some(viewer) => viewer,
-            None => return Ok(false),
+            None => return Ok(false), // ログインしてない時は全てfalse
         };
-        let sql = r#"
-            SELECT EXISTS (
-                SELECT id
-                FROM relationships
-                WHERE follower_id = $1
-                AND followed_id = $2
-            )
-        "#;
-
-        let is_following = sqlx::query(sql)
-            .bind(viewer.id)
-            .bind(self.id)
-            .map(|row: PgRow| row.get::<bool, _>(0))
-            .fetch_one(&**pool)
+        let viewer_is_following = loaders
+            .following_loader
+            .load_one([viewer.id, self.id])
             .await?;
-
-        Ok(is_following)
+        match viewer_is_following {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
     }
     async fn recruitments(
         &self,
@@ -145,6 +150,45 @@ impl User {
             None => Default::default(),
         };
         Ok(RecruitmentConnection { edges, page_info })
+    }
+    async fn following(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<ID>,
+        first: Option<i32>,
+    ) -> async_graphql::Result<FollowingConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let params = SearchParams::new(first, after)?;
+
+        let following = get_following(pool, self.id, params).await?;
+
+        let edges: Vec<Option<UserEdge>> = following
+            .iter()
+            .map(|user| {
+                UserEdge {
+                    node: user.to_owned(),
+                }
+                .into()
+            })
+            .collect();
+
+        let page_info = match following.last() {
+            Some(user) => {
+                let has_next_page = is_next_following_edge(pool, self.id, user.id).await?;
+                let end_cursor = Some(id_encode("User", user.id));
+                PageInfo {
+                    has_next_page,
+                    end_cursor,
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
+        Ok(FollowingConnection {
+            edges: edges.into(),
+            page_info,
+        })
     }
 }
 
@@ -425,6 +469,85 @@ pub async fn is_already_following(
         }
         Err(e) => {
             tracing::error!("is already following failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn get_following(
+    pool: &PgPool,
+    follower_id: i64,
+    params: SearchParams,
+) -> Result<Vec<User>> {
+    let sql = r#"
+        SELECT u.*
+        FROM users as u
+        INNER JOIN relationships as r
+            ON u.id = r.followed_id
+        WHERE r.follower_id = $1
+        AND ($2 OR r.id < (SELECT id
+                           FROM relationships
+                           WHERE follower_id = $3
+                           AND followed_id = $4))
+        ORDER BY r.id DESC
+        LIMIT $5
+    "#;
+
+    let rows = sqlx::query_as::<_, User>(sql)
+        .bind(follower_id)
+        .bind(!params.use_after)
+        .bind(follower_id)
+        .bind(params.after)
+        .bind(params.num_rows)
+        .fetch_all(pool)
+        .await;
+
+    match rows {
+        Ok(following) => {
+            tracing::info!("get following successed!!");
+            Ok(following)
+        }
+        Err(e) => {
+            tracing::error!("get following failed: {:?}", e);
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn is_next_following_edge(
+    pool: &PgPool,
+    follower_id: i64,
+    followed_id: i64,
+) -> Result<bool> {
+    let sql = r#"
+        SELECT EXISTS (
+            SELECT id
+            FROM relationships
+            WHERE id < (SELECT id 
+                        FROM relationships 
+                        WHERE follower_id = $1 
+                        AND followed_id = $2)
+            ORDER BY id DESC
+            LIMIT 1
+        )
+    "#;
+
+    let row = sqlx::query(sql)
+        .bind(follower_id)
+        .bind(followed_id)
+        .map(|row: PgRow| row.get::<bool, _>(0))
+        .fetch_one(pool)
+        .await;
+
+    match row {
+        Ok(is_next) => {
+            tracing::info!("is next following edge successed!!");
+            Ok(is_next)
+        }
+        Err(e) => {
+            tracing::error!("is next following edge failed: {:?}", e);
             Err(e.into())
         }
     }
