@@ -140,45 +140,47 @@ impl User {
             None => Ok(false),
         }
     }
+    /// ユーザーが作成した募集のリスト
     async fn recruitments(
         &self,
         ctx: &Context<'_>,
         first: Option<i32>,
         after: Option<ID>,
+        status: Option<RecruitmentStatus>,
     ) -> async_graphql::Result<RecruitmentConnection> {
-        let search_params = SearchParams::new(first, after)?;
+        let params = RecruitmentSearchParams::new(after, first, status)?;
         let pool = get_db_pool(ctx).await?;
-        let recruitments = get_user_recruitments(pool, search_params, self.id).await?;
-
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges: Vec<RecruitmentEdge> = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: Default::default(),
+        let recruitments = get_user_recruitments(pool, &params, self.id).await?;
+        let edges: Vec<Option<RecruitmentEdge>> = recruitments
+            .iter()
+            .map(|recruitment| {
+                RecruitmentEdge {
                     node: recruitment.to_owned(),
-                })
-                .collect();
-            Some(edges)
-        };
+                }
+                .into()
+            })
+            .collect();
 
         let page_info = match recruitments.last() {
             Some(recruitment) => {
-                let has_next_page = is_next_user_recruitment(pool, recruitment.id, self.id).await?;
-                let end_cursor =
-                    encode_config(format!("Recruitment:{}", recruitment.id), base64::URL_SAFE);
+                let has_next_page =
+                    is_next_user_recruitment(pool, recruitment.id, self.id, &params).await?;
+                let end_cursor = Some(id_encode("Recruitment", recruitment.id));
                 PageInfo {
                     has_next_page,
-                    end_cursor: Some(end_cursor),
+                    end_cursor,
                     ..Default::default()
                 }
             }
             None => Default::default(),
         };
-        Ok(RecruitmentConnection { edges, page_info })
+        Ok(RecruitmentConnection {
+            edges: edges.into(),
+            page_info,
+        })
     }
-    async fn following(
+    /// ユーザーがストックした募集のリスト
+    async fn stocked_recruitments(
         &self,
         ctx: &Context<'_>,
         after: Option<ID>,
