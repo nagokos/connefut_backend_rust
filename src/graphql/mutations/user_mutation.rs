@@ -7,7 +7,7 @@ use validator::{Validate, ValidationError};
 
 use crate::graphql::{
     id_decode,
-    models::user::{is_already_exists_email, is_already_following, User, Viewer},
+    models::user::{is_already_exists_email, is_already_following, User},
 };
 
 static PASSWORD_FORMAT: Lazy<Regex> =
@@ -100,7 +100,7 @@ pub enum RegisterUserResult {
 
 #[derive(SimpleObject, Debug)]
 pub struct RegisterUserSuccess {
-    pub viewer: Viewer,
+    pub viewer: User,
 }
 
 #[derive(SimpleObject, Debug)]
@@ -185,7 +185,7 @@ pub enum LoginUserResult {
 
 #[derive(SimpleObject, Debug)]
 pub struct LoginUserSuccess {
-    pub viewer: Viewer,
+    pub viewer: User,
 }
 
 #[derive(SimpleObject, Debug)]
