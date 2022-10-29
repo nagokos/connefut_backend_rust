@@ -5,8 +5,11 @@ use chrono::{DateTime, Local};
 use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::graphql::{
-    auth::get_viewer, id_decode, loader::get_loaders,
-    mutations::recruitment_mutation::RecruitmentInput, utils::pagination::SearchParams,
+    auth::get_viewer,
+    id_decode,
+    loader::get_loaders,
+    mutations::recruitment_mutation::RecruitmentInput,
+    utils::pagination::{RecruitmentSearchParams, SearchParams},
 };
 
 use super::{
@@ -23,7 +26,7 @@ use super::{
 #[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type)]
 #[sqlx(type_name = "recruitment_category")]
 #[sqlx(rename_all = "lowercase")]
-pub enum Category {
+pub enum RecruitmentCategory {
     Opponent,
     Personal,
     Member,
@@ -31,10 +34,11 @@ pub enum Category {
     Other,
 }
 
-#[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type)]
+#[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type, Default)]
 #[sqlx(type_name = "recruitment_status")]
 #[sqlx(rename_all = "lowercase")]
-pub enum Status {
+pub enum RecruitmentStatus {
+    #[default]
     Draft,
     Published,
     Closed,
@@ -44,7 +48,7 @@ pub enum Status {
 pub struct Recruitment {
     pub id: i64,
     pub title: String,
-    pub category: Category,
+    pub category: RecruitmentCategory,
     pub venue: Option<String>,
     pub venue_lat: Option<f64>,
     pub venue_lng: Option<f64>,
@@ -53,41 +57,51 @@ pub struct Recruitment {
     pub detail: Option<String>,
     pub sport_id: i64,
     pub prefecture_id: i64,
-    pub status: Status,
+    pub status: RecruitmentStatus,
     pub user_id: i64,
     pub published_at: Option<DateTime<Local>>,
     pub created_at: DateTime<Local>,
 }
 
 #[Object]
+/// 募集
 impl Recruitment {
     pub async fn id(&self) -> ID {
         encode_config(format!("Recruitment:{}", self.id), URL_SAFE).into()
     }
+    /// 募集のタイトル
     pub async fn title(&self) -> &str {
         &self.title
     }
-    pub async fn category(&self) -> Category {
+    /// 募集のカテゴリ
+    pub async fn category(&self) -> RecruitmentCategory {
         self.category
     }
+    /// 開催場所 募集のカテゴリが対戦相手、個人参加の場合に必要
     pub async fn venue(&self) -> Option<&str> {
         self.venue.as_deref()
     }
+    /// 開催場所の緯度
     pub async fn venue_lat(&self) -> Option<f64> {
         self.venue_lat
     }
+    /// 開催場所の経度
     pub async fn venue_lng(&self) -> Option<f64> {
         self.venue_lng
     }
+    /// 開催日時 募集のカテゴリが対戦相手、個人参加の場合に必要
     pub async fn start_at(&self) -> Option<DateTime<Local>> {
         self.start_at
     }
+    /// 募集の掲載期限
     pub async fn closing_at(&self) -> Option<DateTime<Local>> {
         self.closing_at
     }
+    /// 募集を公開設定した日時
     pub async fn published_at(&self) -> Option<DateTime<Local>> {
         self.published_at
     }
+    /// 募集の詳細
     pub async fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
     }
@@ -128,6 +142,7 @@ impl Recruitment {
             }
         }
     }
+    /// この募集を作成したユーザー
     pub async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         let loaders = get_loaders(ctx).await;
         let user = loaders.user_loader.load_one(self.user_id).await?;
@@ -136,12 +151,15 @@ impl Recruitment {
             None => Err(async_graphql::Error::new(String::from("User are a must!"))),
         }
     }
+    /// 募集の作成日時
     pub async fn created_at(&self) -> DateTime<Local> {
         self.created_at
     }
-    pub async fn status(&self) -> Status {
+    /// 募集のステータス
+    pub async fn status(&self) -> RecruitmentStatus {
         self.status
     }
+    /// この募集に付与されているタグのリスト
     pub async fn tags(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Tag>> {
         let loaders = get_loaders(ctx).await;
         let tags = loaders.tag_loader.load_one(self.id).await?;
@@ -150,6 +168,7 @@ impl Recruitment {
             None => Ok(Vec::new()), // 募集にタグ紐づいていなかったら配列だけ返す
         }
     }
+    /// 募集エリア
     pub async fn prefecture(&self, ctx: &Context<'_>) -> async_graphql::Result<Prefecture> {
         let loaders = get_loaders(ctx).await;
         let prefecture = loaders
@@ -163,6 +182,7 @@ impl Recruitment {
             ))),
         }
     }
+    /// 募集しているスポーツ
     pub async fn sport(&self, ctx: &Context<'_>) -> async_graphql::Result<Sport> {
         let loaders = get_loaders(ctx).await;
         let sport = loaders.sport_loader.load_one(self.sport_id).await?;
@@ -227,28 +247,29 @@ pub async fn get_recruitment(pool: &PgPool, id: i64) -> Result<Option<Recruitmen
     }
 }
 
-//? get_viewer_recruitmentsとの違いが公開済みかどうかでしかないためクエリだけ分岐で変えても？
 #[tracing::instrument]
 pub async fn get_user_recruitments(
     pool: &PgPool,
-    search_params: SearchParams,
+    params: &RecruitmentSearchParams,
     user_id: i64,
 ) -> Result<Vec<Recruitment>> {
     let sql = r#"
         SELECT *
         FROM recruitments
         WHERE user_id = $1
-        AND status = 'published'
-        AND ($2 OR id < $3)
+        AND ($2 OR status = $3) 
+        AND ($4 OR id < $5)
         ORDER BY id DESC
-        LIMIT $4
+        LIMIT $6
     "#;
 
     let rows = sqlx::query_as::<_, Recruitment>(sql)
         .bind(user_id)
-        .bind(!search_params.use_after)
-        .bind(search_params.after)
-        .bind(search_params.num_rows)
+        .bind(!params.use_status)
+        .bind(params.status)
+        .bind(!params.use_after)
+        .bind(params.after)
+        .bind(params.num_rows)
         .fetch_all(pool)
         .await;
 
@@ -265,14 +286,19 @@ pub async fn get_user_recruitments(
 }
 
 #[tracing::instrument]
-pub async fn is_next_user_recruitment(pool: &PgPool, id: i64, user_id: i64) -> Result<bool> {
+pub async fn is_next_user_recruitment(
+    pool: &PgPool,
+    id: i64,
+    user_id: i64,
+    params: &RecruitmentSearchParams,
+) -> Result<bool> {
     let sql = r#"
         SELECT EXISTS (
             SELECT id
             FROM recruitments
             WHERE user_id = $1
-            AND status = 'published'
-            AND id < $2
+            AND ($2 OR status = $3)
+            AND id < $4
             ORDER BY id DESC
             LIMIT 1
         )
@@ -280,6 +306,8 @@ pub async fn is_next_user_recruitment(pool: &PgPool, id: i64, user_id: i64) -> R
 
     let row = sqlx::query(sql)
         .bind(user_id)
+        .bind(!params.use_status)
+        .bind(params.status)
         .bind(id)
         .map(|row: PgRow| row.get::<bool, _>(0))
         .fetch_one(pool)
@@ -292,76 +320,6 @@ pub async fn is_next_user_recruitment(pool: &PgPool, id: i64, user_id: i64) -> R
         }
         Err(e) => {
             tracing::error!("is next user recruitment failed: {:?}", e);
-            Err(e.into())
-        }
-    }
-}
-
-#[tracing::instrument]
-pub async fn get_viewer_recruitments(
-    pool: &PgPool,
-    search_params: SearchParams,
-    user_id: i64,
-) -> Result<Vec<Recruitment>> {
-    // 一ページ目の時はid < $2は実行されたくないためOR必要
-    let sql = r#"
-        SELECT *
-        FROM recruitments
-        WHERE ($1 OR id < $2)
-        AND user_id = $3
-        ORDER BY id DESC
-        LIMIT $4
-    "#;
-
-    let row = sqlx::query_as::<_, Recruitment>(sql)
-        .bind(!search_params.use_after)
-        .bind(search_params.after)
-        .bind(user_id)
-        .bind(search_params.num_rows)
-        .fetch_all(pool)
-        .await;
-
-    match row {
-        Ok(recruitments) => {
-            tracing::info!("get viewer recruitments successed!!");
-            Ok(recruitments)
-        }
-        Err(e) => {
-            tracing::error!("get viewer recruitments failed: {:?}", e);
-            Err(e.into())
-        }
-    }
-}
-
-#[tracing::instrument]
-pub async fn is_next_viewer_recruitment(pool: &PgPool, id: i64, user_id: i64) -> Result<bool> {
-    // 次ページがあるか確認の時はOR必要ない
-    // 最後のレコードのidを基準にするため
-    let sql = r#"
-        SELECT EXISTS (
-            SELECT *
-            FROM recruitments
-            WHERE id < $1
-            AND user_id = $2
-            ORDER BY id DESC
-            LIMIT 1
-        )
-    "#;
-
-    let row = sqlx::query(sql)
-        .bind(id)
-        .bind(user_id)
-        .map(|row: PgRow| row.get::<bool, _>(0))
-        .fetch_one(pool)
-        .await;
-
-    match row {
-        Ok(is_exists) => {
-            tracing::info!("is next viewer recruitment successed!!");
-            Ok(is_exists)
-        }
-        Err(e) => {
-            tracing::error!("is next viewer recruitment failed: {:?}", e);
             Err(e.into())
         }
     }
@@ -493,7 +451,7 @@ pub async fn create(pool: &PgPool, input: RecruitmentInput, user_id: i64) -> Res
 
     let now = Local::now();
     let published_at = match input.status {
-        Status::Published => Some(now),
+        RecruitmentStatus::Published => Some(now),
         _ => None,
     };
 
@@ -556,7 +514,7 @@ pub async fn update(
 
     let now = Local::now();
     let published_at = match input.status {
-        Status::Published => Some(now),
+        RecruitmentStatus::Published => Some(now),
         _ => None,
     };
 

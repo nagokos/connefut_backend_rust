@@ -30,6 +30,7 @@ pub struct TagQuery;
 
 #[Object]
 impl TagQuery {
+    /// タグのリストを取得する
     async fn tags(&self, ctx: &Context<'_>) -> Result<Vec<Tag>> {
         let pool = get_db_pool(ctx).await?;
         let tags = get_tags(pool).await?;
@@ -42,6 +43,7 @@ pub struct TagMutation;
 
 #[Object]
 impl TagMutation {
+    /// 募集に紐づけるタグを作成する
     async fn create_tag(
         &self,
         ctx: &Context<'_>,

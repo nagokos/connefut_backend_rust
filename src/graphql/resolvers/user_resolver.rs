@@ -8,9 +8,9 @@ use crate::{
             jwt::{self, Claims},
         },
         id_decode, id_encode,
+        mail::sender::send_email_verification_code,
         models::user::{
             self, authentication, follow, get_user_from_email, get_user_from_id, unfollow, User,
-            Viewer,
         },
         mutations::user_mutation::{
             FollowUserInput, FollowUserResult, FollowUserSuccess, LoginUserAuthenticationError,
@@ -47,17 +47,10 @@ pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
-    async fn viewer(&self, ctx: &Context<'_>) -> Result<Option<Viewer>> {
+    /// 現在認証されているユーザーを取得する
+    async fn viewer(&self, ctx: &Context<'_>) -> Result<Option<User>> {
         let user = get_viewer(ctx).await;
-        match user {
-            Some(user) => {
-                let viewer = Viewer {
-                    account_user: { user.to_owned() },
-                };
-                Ok(Some(viewer))
-            }
-            None => Ok(None),
-        }
+        Ok(user.to_owned())
     }
 }
 
@@ -66,6 +59,7 @@ pub struct UserMutation;
 
 #[Object]
 impl UserMutation {
+    /// ユーザーを新規登録する
     async fn register_user(
         &self,
         ctx: &Context<'_>,
@@ -83,6 +77,11 @@ impl UserMutation {
 
         let user = user::create(pool, &input).await?;
 
+        send_email_verification_code(&user).await.map_err(|e| {
+            tracing::error!("send email verification code failed: {:?}", e);
+            e
+        })?;
+
         let claims = Claims {
             sub: user.id.to_string(),
             ..Default::default()
@@ -90,12 +89,12 @@ impl UserMutation {
         match jwt::token_encode(claims) {
             Ok(token) => {
                 jwt::set_jwt_cookie(token, ctx);
-                let viewer = Viewer { account_user: user };
-                Ok(RegisterUserSuccess { viewer }.into())
+                Ok(RegisterUserSuccess { viewer: user }.into())
             }
             Err(e) => Err(e.into()),
         }
     }
+    /// ユーザーを認証する
     async fn login_user(
         &self,
         ctx: &Context<'_>,
@@ -135,9 +134,8 @@ impl UserMutation {
                 match jwt::token_encode(claims) {
                     Ok(token) => {
                         jwt::set_jwt_cookie(token, ctx);
-                        let viewer = Viewer { account_user: user };
                         tracing::info!("User authenticated.");
-                        Ok(LoginUserSuccess { viewer }.into())
+                        Ok(LoginUserSuccess { viewer: user }.into())
                     }
                     Err(e) => Err(e.into()),
                 }
@@ -145,6 +143,7 @@ impl UserMutation {
             Err(e) => Err(e.into()),
         }
     }
+    /// ユーザーをフォローする
     async fn follow_user(
         &self,
         ctx: &Context<'_>,
@@ -173,6 +172,7 @@ impl UserMutation {
         let success = FollowUserSuccess { user };
         Ok(success.into())
     }
+    /// ユーザーのフォローを外す
     async fn unfollow_user(
         &self,
         ctx: &Context<'_>,

@@ -3,8 +3,9 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2, PasswordHash, PasswordVerifier,
 };
+use async_graphql::*;
+
 use async_graphql::{Context, Enum, Object, ID};
-use base64::encode_config;
 use chrono::{DateTime, Duration, Local};
 use rand::Rng;
 use sqlx::{postgres::PgRow, PgPool, Row};
@@ -16,33 +17,35 @@ use crate::{
         auth::get_viewer,
         id_encode,
         loader::get_loaders,
-        mail::sender::send_email_verification_code,
         mutations::user_mutation::RegisterUserInput,
         resolvers::{
             recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
             user_resolver::{FollowingConnection, UserEdge},
         },
-        utils::pagination::{PageInfo, SearchParams},
+        utils::pagination::{PageInfo, RecruitmentSearchParams, SearchParams},
         FieldGuard,
     },
 };
 
 use super::recruitment::{
-    get_stocked_recruitments, get_user_recruitments, get_viewer_recruitments,
-    is_next_stocked_recruitment, is_next_user_recruitment, is_next_viewer_recruitment,
+    get_stocked_recruitments, get_user_recruitments, is_next_stocked_recruitment,
+    is_next_user_recruitment, RecruitmentStatus,
 };
 
+/// 権限
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
 #[sqlx(type_name = "user_role")]
-#[sqlx(rename_all = "camelCase")]
+#[sqlx(rename_all = "lowercase")]
 pub enum UserRole {
+    #[graphql]
     General,
     Admin,
 }
 
-#[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
+/// メールアドレスの確認状態
+#[derive(Enum, Clone, Copy, PartialEq, Eq, Debug, sqlx::Type)]
 #[sqlx(type_name = "email_verification_status")]
-#[sqlx(rename_all = "camelCase")]
+#[sqlx(rename_all = "lowercase")]
 pub enum EmailVerificationStatus {
     Pending,
     Verified,
@@ -64,40 +67,62 @@ pub struct User {
 }
 
 #[Object]
+/// ユーザー
 impl User {
     pub async fn id(&self) -> ID {
         id_encode("User", self.id).into()
     }
+    /// ユーザーの表示名
     async fn name(&self) -> &str {
         &self.name
     }
+    /// ユーザーのメールアドレス
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn email(&self) -> Option<async_graphql::Result<Option<&str>>> {
         Some(Ok(self.email.as_str().into()))
     }
+    /// ユーザーが未確認のメールアドレス
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn unverified_email(&self) -> Option<&str> {
         self.unverified_email.as_deref()
     }
+    /// ユーザーのアバターURL
     async fn avatar(&self) -> &str {
         &self.avatar
     }
+    /// ユーザーの権限
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn role(&self) -> UserRole {
         self.role
     }
+    /// ユーザーの自己紹介
     async fn introduction(&self) -> Option<&str> {
         self.introduction.as_deref()
     }
+    /// ユーザーのメールアドレス確認状態
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
     }
-    // todo is_following_viewerの追加(このユーザーがviewerをフォローしているかを返す)
-    // todo async fn is_following_viewer() -> Option<async_graphql::Result<bool>>
+    /// このユーザーがログインユーザー(Viewer)をフォローしているか
+    async fn is_following_viewer(&self, ctx: &Context<'_>) -> FieldResult<bool> {
+        let loaders = get_loaders(ctx).await;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Ok(false),
+        };
 
-    // todo N+1に対応
-    // このユーザーがViewerからフォローされているか
+        let is_following_viewer = loaders
+            .following_loader
+            .load_one([self.id, viewer.id])
+            .await?;
+
+        match is_following_viewer {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
+    }
+    /// このユーザーがログインユーザー(Viewer)からフォローされているか
     async fn viewer_is_following(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
         let loaders = get_loaders(ctx).await;
         let viewer = match get_viewer(ctx).await {
@@ -113,44 +138,86 @@ impl User {
             None => Ok(false),
         }
     }
+    /// ユーザーが作成した募集のリスト
     async fn recruitments(
         &self,
         ctx: &Context<'_>,
         first: Option<i32>,
         after: Option<ID>,
+        status: Option<RecruitmentStatus>,
     ) -> async_graphql::Result<RecruitmentConnection> {
-        let search_params = SearchParams::new(first, after)?;
+        let params = RecruitmentSearchParams::new(after, first, status)?;
         let pool = get_db_pool(ctx).await?;
-        let recruitments = get_user_recruitments(pool, search_params, self.id).await?;
-
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges: Vec<RecruitmentEdge> = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: Default::default(),
+        let recruitments = get_user_recruitments(pool, &params, self.id).await?;
+        let edges: Vec<Option<RecruitmentEdge>> = recruitments
+            .iter()
+            .map(|recruitment| {
+                RecruitmentEdge {
                     node: recruitment.to_owned(),
-                })
-                .collect();
-            Some(edges)
-        };
+                }
+                .into()
+            })
+            .collect();
 
         let page_info = match recruitments.last() {
             Some(recruitment) => {
-                let has_next_page = is_next_user_recruitment(pool, recruitment.id, self.id).await?;
-                let end_cursor =
-                    encode_config(format!("Recruitment:{}", recruitment.id), base64::URL_SAFE);
+                let has_next_page =
+                    is_next_user_recruitment(pool, recruitment.id, self.id, &params).await?;
+                let end_cursor = Some(id_encode("Recruitment", recruitment.id));
                 PageInfo {
                     has_next_page,
-                    end_cursor: Some(end_cursor),
+                    end_cursor,
                     ..Default::default()
                 }
             }
             None => Default::default(),
         };
-        Ok(RecruitmentConnection { edges, page_info })
+        Ok(RecruitmentConnection {
+            edges: edges.into(),
+            page_info,
+        })
     }
+    /// ユーザーがストックした募集のリスト
+    async fn stocked_recruitments(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<ID>,
+        first: Option<i32>,
+    ) -> Result<RecruitmentConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let params = SearchParams::new(after, first)?;
+        let recruitments = get_stocked_recruitments(pool, self.id, params).await?;
+
+        let edges: Vec<Option<RecruitmentEdge>> = recruitments
+            .iter()
+            .map(|recruitment| {
+                RecruitmentEdge {
+                    node: recruitment.to_owned(),
+                }
+                .into()
+            })
+            .collect();
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let has_next_page =
+                    is_next_stocked_recruitment(pool, recruitment.id, self.id).await?;
+                let end_cursor = Some(id_encode("Recruitment", recruitment.id));
+                PageInfo {
+                    has_next_page,
+                    end_cursor,
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
+        Ok(RecruitmentConnection {
+            edges: edges.into(),
+            page_info,
+        })
+    }
+    /// ユーザーがフォローしているユーザーのリスト
     async fn following(
         &self,
         ctx: &Context<'_>,
@@ -158,7 +225,7 @@ impl User {
         first: Option<i32>,
     ) -> async_graphql::Result<FollowingConnection> {
         let pool = get_db_pool(ctx).await?;
-        let params = SearchParams::new(first, after)?;
+        let params = SearchParams::new(after, first)?;
 
         let following = get_following(pool, self.id, params).await?;
 
@@ -189,98 +256,6 @@ impl User {
             edges: edges.into(),
             page_info,
         })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Viewer {
-    pub account_user: User,
-}
-
-#[Object]
-impl Viewer {
-    async fn account_user(&self) -> User {
-        self.account_user.clone()
-    }
-    async fn recruitments(
-        &self,
-        ctx: &Context<'_>,
-        first: Option<i32>,
-        after: Option<ID>,
-    ) -> async_graphql::Result<RecruitmentConnection> {
-        let pool = get_db_pool(ctx).await?;
-        let search_params = SearchParams::new(first, after)?;
-        let recruitments =
-            get_viewer_recruitments(pool, search_params, self.account_user.id).await?;
-
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges: Vec<RecruitmentEdge> = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: String::default(),
-                    node: recruitment.to_owned(),
-                })
-                .collect();
-            Some(edges)
-        };
-
-        let page_info = match recruitments.last() {
-            Some(recruitment) => {
-                let has_next_page =
-                    is_next_viewer_recruitment(pool, recruitment.id, self.account_user.id).await?;
-                let end_cursor = id_encode("Recruitment", recruitment.id);
-                PageInfo {
-                    has_next_page,
-                    end_cursor: Some(end_cursor),
-                    ..Default::default()
-                }
-            }
-            None => Default::default(),
-        };
-        Ok(RecruitmentConnection { edges, page_info })
-    }
-    async fn stocked_recruitments(
-        &self,
-        ctx: &Context<'_>,
-        first: Option<i32>,
-        after: Option<ID>,
-    ) -> Result<RecruitmentConnection> {
-        let pool = get_db_pool(ctx).await?;
-        let search_params = SearchParams::new(first, after)?;
-
-        let recruitments =
-            get_stocked_recruitments(pool, self.account_user.id, search_params).await?;
-
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges: Vec<RecruitmentEdge> = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: String::default(),
-                    node: recruitment.to_owned(),
-                })
-                .collect();
-            Some(edges)
-        };
-
-        let page_info = match recruitments.last() {
-            Some(recruitment) => {
-                let end_cursor = id_encode("Recruitment", recruitment.id);
-                let has_next_page =
-                    is_next_stocked_recruitment(pool, recruitment.id, self.account_user.id).await?;
-                PageInfo {
-                    end_cursor: Some(end_cursor),
-                    has_next_page,
-                    ..Default::default()
-                }
-            }
-            None => Default::default(),
-        };
-
-        Ok(RecruitmentConnection { edges, page_info })
     }
 }
 
@@ -338,13 +313,6 @@ pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
     match user {
         Ok(user) => {
             tracing::info!("Register user successed!!");
-            match send_email_verification_code(&user).await {
-                Ok(_) => (),
-                Err(e) => {
-                    tracing::error!("{:?}", e);
-                    return Err(e);
-                }
-            }
             Ok(user)
         }
         Err(e) => {
