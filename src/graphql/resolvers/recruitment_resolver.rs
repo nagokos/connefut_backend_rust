@@ -21,19 +21,8 @@ pub struct RecruitmentConnection {
     pub page_info: PageInfo,
 }
 
-#[Object]
-impl RecruitmentConnection {
-    pub async fn edges(&self) -> Option<Vec<RecruitmentEdge>> {
-        self.edges.clone()
-    }
-    pub async fn page_info(&self) -> PageInfo {
-        self.page_info.clone()
-    }
-}
-
 #[derive(Debug, Clone)]
 pub struct RecruitmentEdge {
-    pub cursor: String,
     pub node: Recruitment,
 }
 
