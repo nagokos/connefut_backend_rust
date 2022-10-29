@@ -7,7 +7,7 @@ use lettre::{
 
 use crate::graphql::models::user::User;
 
-pub async fn send_email_verification_code(user: &User) -> Result<bool> {
+pub async fn send_email_verification_code(user: &User) -> Result<()> {
     let from: Mailbox = format!("{} <{}>", "connefut", "info@connefut.com").parse()?;
     let to: Mailbox = user.email.as_str().parse()?;
 
@@ -36,7 +36,7 @@ pub async fn send_email_verification_code(user: &User) -> Result<bool> {
     match mailer.send(email).await {
         Ok(_) => {
             tracing::info!("email send successed!!");
-            Ok(true)
+            Ok(())
         }
         Err(e) => {
             tracing::error!("{:?}", e);
