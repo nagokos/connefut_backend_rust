@@ -451,7 +451,7 @@ pub async fn create(pool: &PgPool, input: RecruitmentInput, user_id: i64) -> Res
 
     let now = Local::now();
     let published_at = match input.status {
-        Status::Published => Some(now),
+        RecruitmentStatus::Published => Some(now),
         _ => None,
     };
 
@@ -514,7 +514,7 @@ pub async fn update(
 
     let now = Local::now();
     let published_at = match input.status {
-        Status::Published => Some(now),
+        RecruitmentStatus::Published => Some(now),
         _ => None,
     };
 
