@@ -89,8 +89,7 @@ impl UserMutation {
         match jwt::token_encode(claims) {
             Ok(token) => {
                 jwt::set_jwt_cookie(token, ctx);
-                let viewer = Viewer { account_user: user };
-                Ok(RegisterUserSuccess { viewer }.into())
+                Ok(RegisterUserSuccess { viewer: user }.into())
             }
             Err(e) => Err(e.into()),
         }
@@ -135,9 +134,8 @@ impl UserMutation {
                 match jwt::token_encode(claims) {
                     Ok(token) => {
                         jwt::set_jwt_cookie(token, ctx);
-                        let viewer = Viewer { account_user: user };
                         tracing::info!("User authenticated.");
-                        Ok(LoginUserSuccess { viewer }.into())
+                        Ok(LoginUserSuccess { viewer: user }.into())
                     }
                     Err(e) => Err(e.into()),
                 }
