@@ -14,8 +14,9 @@ use crate::graphql::models::{
 use super::models::stock::Stock;
 
 //* Node interface */
+/// IDを持つオブジェクト
 #[derive(Interface)]
-#[graphql(field(name = "id", type = "ID"))]
+#[graphql(field(name = "id", type = "ID", desc = "オブジェクトのID"))]
 pub enum Node {
     Prefecture(Prefecture),
     Sport(Sport),
@@ -30,6 +31,7 @@ pub struct RootQuery;
 
 #[Object]
 impl RootQuery {
+    /// 指定されたIDでNodeを取得する
     async fn node(&self, _ctx: &Context<'_>, _id: ID) -> Option<Node> {
         let tag = Tag {
             id: 9,
