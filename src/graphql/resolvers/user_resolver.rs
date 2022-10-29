@@ -59,6 +59,7 @@ pub struct UserMutation;
 
 #[Object]
 impl UserMutation {
+    /// ユーザーを新規登録する
     async fn register_user(
         &self,
         ctx: &Context<'_>,
@@ -89,6 +90,7 @@ impl UserMutation {
             Err(e) => Err(e.into()),
         }
     }
+    /// ユーザーを認証する
     async fn login_user(
         &self,
         ctx: &Context<'_>,
@@ -138,6 +140,7 @@ impl UserMutation {
             Err(e) => Err(e.into()),
         }
     }
+    /// ユーザーをフォローする
     async fn follow_user(
         &self,
         ctx: &Context<'_>,
@@ -166,6 +169,7 @@ impl UserMutation {
         let success = FollowUserSuccess { user };
         Ok(success.into())
     }
+    /// ユーザーのフォローを外す
     async fn unfollow_user(
         &self,
         ctx: &Context<'_>,
