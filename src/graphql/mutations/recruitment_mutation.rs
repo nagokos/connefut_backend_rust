@@ -3,7 +3,7 @@ use chrono::{DateTime, Local};
 use validator::Validate;
 
 use crate::graphql::{
-    models::recruitment::{Category, Status},
+    models::recruitment::{RecruitmentCategory, RecruitmentStatus},
     resolvers::recruitment_resolver::RecruitmentEdge,
 };
 
@@ -12,7 +12,7 @@ pub struct RecruitmentInput {
     #[validate(length(max = 60, message = "タイトルは60文字以内にしてください"))]
     pub title: String,
     pub sport_id: ID,
-    pub category: Category,
+    pub category: RecruitmentCategory,
     #[validate(length(max = 10000, message = "募集の詳細は10000文字以内で入力してください"))]
     pub detail: Option<String>,
     pub prefecture_id: ID,
@@ -21,7 +21,7 @@ pub struct RecruitmentInput {
     pub venue_lng: Option<f64>,
     pub start_at: Option<DateTime<Local>>,
     pub closing_at: Option<DateTime<Local>>,
-    pub status: Status,
+    pub status: RecruitmentStatus,
     pub tag_ids: Vec<ID>,
 }
 
