@@ -3,8 +3,9 @@ use argon2::{
     password_hash::{rand_core::OsRng, PasswordHasher, SaltString},
     Argon2, PasswordHash, PasswordVerifier,
 };
+use async_graphql::*;
+
 use async_graphql::{Context, Enum, Object, ID};
-use base64::encode_config;
 use chrono::{DateTime, Duration, Local};
 use rand::Rng;
 use sqlx::{postgres::PgRow, PgPool, Row};
@@ -13,6 +14,7 @@ use std::ops::Add;
 use crate::{
     database::get_db_pool,
     graphql::{
+        self,
         auth::get_viewer,
         id_encode,
         loader::get_loaders,
@@ -22,25 +24,28 @@ use crate::{
             recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
             user_resolver::{FollowingConnection, UserEdge},
         },
-        utils::pagination::{PageInfo, SearchParams},
+        utils::pagination::{PageInfo, RecruitmentSearchParams, SearchParams},
         FieldGuard,
     },
 };
 
 use super::recruitment::{
-    get_stocked_recruitments, get_user_recruitments, get_viewer_recruitments,
-    is_next_stocked_recruitment, is_next_user_recruitment, is_next_viewer_recruitment,
+    get_stocked_recruitments, get_user_recruitments, is_next_stocked_recruitment,
+    is_next_user_recruitment, RecruitmentStatus,
 };
 
+/// 権限
 #[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
 #[sqlx(type_name = "user_role")]
 #[sqlx(rename_all = "lowercase")]
 pub enum UserRole {
+    #[graphql]
     General,
     Admin,
 }
 
-#[derive(Clone, Copy, Enum, PartialEq, Eq, Debug, sqlx::Type)]
+/// メールアドレスの確認状態
+#[derive(Enum, Clone, Copy, PartialEq, Eq, Debug, sqlx::Type)]
 #[sqlx(type_name = "email_verification_status")]
 #[sqlx(rename_all = "lowercase")]
 pub enum EmailVerificationStatus {
