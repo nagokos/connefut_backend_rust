@@ -28,8 +28,8 @@ pub struct RecruitmentEdge {
 
 #[Object]
 impl RecruitmentEdge {
-    pub async fn cursor(&self) -> String {
-        encode_config(format!("Recruitment:{}", self.node.id), URL_SAFE)
+    pub async fn cursor(&self) -> ID {
+        id_encode("Recruitment", self.node.id).into()
     }
     pub async fn node(&self) -> Recruitment {
         self.node.clone()
