@@ -119,8 +119,12 @@ impl User {
             .load_one([self.id, viewer.id])
             .await?;
 
-    // todo N+1に対応
-    // このユーザーがViewerからフォローされているか
+        match is_following_viewer {
+            Some(_) => Ok(true),
+            None => Ok(false),
+        }
+    }
+    /// このユーザーがログインユーザー(Viewer)からフォローされているか
     async fn viewer_is_following(&self, ctx: &Context<'_>) -> async_graphql::Result<bool> {
         let loaders = get_loaders(ctx).await;
         let viewer = match get_viewer(ctx).await {
