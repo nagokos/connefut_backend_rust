@@ -57,41 +57,51 @@ pub struct Recruitment {
     pub detail: Option<String>,
     pub sport_id: i64,
     pub prefecture_id: i64,
-    pub status: Status,
+    pub status: RecruitmentStatus,
     pub user_id: i64,
     pub published_at: Option<DateTime<Local>>,
     pub created_at: DateTime<Local>,
 }
 
 #[Object]
+/// 募集
 impl Recruitment {
     pub async fn id(&self) -> ID {
         encode_config(format!("Recruitment:{}", self.id), URL_SAFE).into()
     }
+    /// 募集のタイトル
     pub async fn title(&self) -> &str {
         &self.title
     }
-    pub async fn category(&self) -> Category {
+    /// 募集のカテゴリ
+    pub async fn category(&self) -> RecruitmentCategory {
         self.category
     }
+    /// 開催場所 募集のカテゴリが対戦相手、個人参加の場合に必要
     pub async fn venue(&self) -> Option<&str> {
         self.venue.as_deref()
     }
+    /// 開催場所の緯度
     pub async fn venue_lat(&self) -> Option<f64> {
         self.venue_lat
     }
+    /// 開催場所の経度
     pub async fn venue_lng(&self) -> Option<f64> {
         self.venue_lng
     }
+    /// 開催日時 募集のカテゴリが対戦相手、個人参加の場合に必要
     pub async fn start_at(&self) -> Option<DateTime<Local>> {
         self.start_at
     }
+    /// 募集の掲載期限
     pub async fn closing_at(&self) -> Option<DateTime<Local>> {
         self.closing_at
     }
+    /// 募集を公開設定した日時
     pub async fn published_at(&self) -> Option<DateTime<Local>> {
         self.published_at
     }
+    /// 募集の詳細
     pub async fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
     }
@@ -132,6 +142,7 @@ impl Recruitment {
             }
         }
     }
+    /// この募集を作成したユーザー
     pub async fn user(&self, ctx: &Context<'_>) -> async_graphql::Result<User> {
         let loaders = get_loaders(ctx).await;
         let user = loaders.user_loader.load_one(self.user_id).await?;
@@ -140,12 +151,15 @@ impl Recruitment {
             None => Err(async_graphql::Error::new(String::from("User are a must!"))),
         }
     }
+    /// 募集の作成日時
     pub async fn created_at(&self) -> DateTime<Local> {
         self.created_at
     }
-    pub async fn status(&self) -> Status {
+    /// 募集のステータス
+    pub async fn status(&self) -> RecruitmentStatus {
         self.status
     }
+    /// この募集に付与されているタグのリスト
     pub async fn tags(&self, ctx: &Context<'_>) -> async_graphql::Result<Vec<Tag>> {
         let loaders = get_loaders(ctx).await;
         let tags = loaders.tag_loader.load_one(self.id).await?;
@@ -154,6 +168,7 @@ impl Recruitment {
             None => Ok(Vec::new()), // 募集にタグ紐づいていなかったら配列だけ返す
         }
     }
+    /// 募集エリア
     pub async fn prefecture(&self, ctx: &Context<'_>) -> async_graphql::Result<Prefecture> {
         let loaders = get_loaders(ctx).await;
         let prefecture = loaders
@@ -167,6 +182,7 @@ impl Recruitment {
             ))),
         }
     }
+    /// 募集しているスポーツ
     pub async fn sport(&self, ctx: &Context<'_>) -> async_graphql::Result<Sport> {
         let loaders = get_loaders(ctx).await;
         let sport = loaders.sport_loader.load_one(self.sport_id).await?;
