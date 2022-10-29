@@ -77,6 +77,11 @@ impl UserMutation {
 
         let user = user::create(pool, &input).await?;
 
+        send_email_verification_code(&user).await.map_err(|e| {
+            tracing::error!("send email verification code failed: {:?}", e);
+            e
+        })?;
+
         let claims = Claims {
             sub: user.id.to_string(),
             ..Default::default()
