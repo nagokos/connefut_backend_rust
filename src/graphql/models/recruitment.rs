@@ -247,28 +247,29 @@ pub async fn get_recruitment(pool: &PgPool, id: i64) -> Result<Option<Recruitmen
     }
 }
 
-//? get_viewer_recruitmentsとの違いが公開済みかどうかでしかないためクエリだけ分岐で変えても？
 #[tracing::instrument]
 pub async fn get_user_recruitments(
     pool: &PgPool,
-    search_params: SearchParams,
+    params: &RecruitmentSearchParams,
     user_id: i64,
 ) -> Result<Vec<Recruitment>> {
     let sql = r#"
         SELECT *
         FROM recruitments
         WHERE user_id = $1
-        AND status = 'published'
-        AND ($2 OR id < $3)
+        AND ($2 OR status = $3) 
+        AND ($4 OR id < $5)
         ORDER BY id DESC
-        LIMIT $4
+        LIMIT $6
     "#;
 
     let rows = sqlx::query_as::<_, Recruitment>(sql)
         .bind(user_id)
-        .bind(!search_params.use_after)
-        .bind(search_params.after)
-        .bind(search_params.num_rows)
+        .bind(!params.use_status)
+        .bind(params.status)
+        .bind(!params.use_after)
+        .bind(params.after)
+        .bind(params.num_rows)
         .fetch_all(pool)
         .await;
 
@@ -285,14 +286,19 @@ pub async fn get_user_recruitments(
 }
 
 #[tracing::instrument]
-pub async fn is_next_user_recruitment(pool: &PgPool, id: i64, user_id: i64) -> Result<bool> {
+pub async fn is_next_user_recruitment(
+    pool: &PgPool,
+    id: i64,
+    user_id: i64,
+    params: &RecruitmentSearchParams,
+) -> Result<bool> {
     let sql = r#"
         SELECT EXISTS (
             SELECT id
             FROM recruitments
             WHERE user_id = $1
-            AND status = 'published'
-            AND id < $2
+            AND ($2 OR status = $3)
+            AND id < $4
             ORDER BY id DESC
             LIMIT 1
         )
@@ -300,6 +306,8 @@ pub async fn is_next_user_recruitment(pool: &PgPool, id: i64, user_id: i64) -> R
 
     let row = sqlx::query(sql)
         .bind(user_id)
+        .bind(!params.use_status)
+        .bind(params.status)
         .bind(id)
         .map(|row: PgRow| row.get::<bool, _>(0))
         .fetch_one(pool)
@@ -312,76 +320,6 @@ pub async fn is_next_user_recruitment(pool: &PgPool, id: i64, user_id: i64) -> R
         }
         Err(e) => {
             tracing::error!("is next user recruitment failed: {:?}", e);
-            Err(e.into())
-        }
-    }
-}
-
-#[tracing::instrument]
-pub async fn get_viewer_recruitments(
-    pool: &PgPool,
-    search_params: SearchParams,
-    user_id: i64,
-) -> Result<Vec<Recruitment>> {
-    // 一ページ目の時はid < $2は実行されたくないためOR必要
-    let sql = r#"
-        SELECT *
-        FROM recruitments
-        WHERE ($1 OR id < $2)
-        AND user_id = $3
-        ORDER BY id DESC
-        LIMIT $4
-    "#;
-
-    let row = sqlx::query_as::<_, Recruitment>(sql)
-        .bind(!search_params.use_after)
-        .bind(search_params.after)
-        .bind(user_id)
-        .bind(search_params.num_rows)
-        .fetch_all(pool)
-        .await;
-
-    match row {
-        Ok(recruitments) => {
-            tracing::info!("get viewer recruitments successed!!");
-            Ok(recruitments)
-        }
-        Err(e) => {
-            tracing::error!("get viewer recruitments failed: {:?}", e);
-            Err(e.into())
-        }
-    }
-}
-
-#[tracing::instrument]
-pub async fn is_next_viewer_recruitment(pool: &PgPool, id: i64, user_id: i64) -> Result<bool> {
-    // 次ページがあるか確認の時はOR必要ない
-    // 最後のレコードのidを基準にするため
-    let sql = r#"
-        SELECT EXISTS (
-            SELECT *
-            FROM recruitments
-            WHERE id < $1
-            AND user_id = $2
-            ORDER BY id DESC
-            LIMIT 1
-        )
-    "#;
-
-    let row = sqlx::query(sql)
-        .bind(id)
-        .bind(user_id)
-        .map(|row: PgRow| row.get::<bool, _>(0))
-        .fetch_one(pool)
-        .await;
-
-    match row {
-        Ok(is_exists) => {
-            tracing::info!("is next viewer recruitment successed!!");
-            Ok(is_exists)
-        }
-        Err(e) => {
-            tracing::error!("is next viewer recruitment failed: {:?}", e);
             Err(e.into())
         }
     }
