@@ -69,31 +69,39 @@ pub struct User {
 }
 
 #[Object]
+/// ユーザー
 impl User {
     pub async fn id(&self) -> ID {
         id_encode("User", self.id).into()
     }
+    /// ユーザーの表示名
     async fn name(&self) -> &str {
         &self.name
     }
+    /// ユーザーのメールアドレス
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn email(&self) -> Option<async_graphql::Result<Option<&str>>> {
         Some(Ok(self.email.as_str().into()))
     }
+    /// ユーザーが未確認のメールアドレス
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn unverified_email(&self) -> Option<&str> {
         self.unverified_email.as_deref()
     }
+    /// ユーザーのアバターURL
     async fn avatar(&self) -> &str {
         &self.avatar
     }
+    /// ユーザーの権限
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn role(&self) -> UserRole {
         self.role
     }
+    /// ユーザーの自己紹介
     async fn introduction(&self) -> Option<&str> {
         self.introduction.as_deref()
     }
+    /// ユーザーのメールアドレス確認状態
     #[graphql(guard = "FieldGuard::new(self.id)")]
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
