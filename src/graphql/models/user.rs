@@ -14,11 +14,9 @@ use std::ops::Add;
 use crate::{
     database::get_db_pool,
     graphql::{
-        self,
         auth::get_viewer,
         id_encode,
         loader::get_loaders,
-        mail::sender::send_email_verification_code,
         mutations::user_mutation::RegisterUserInput,
         resolvers::{
             recruitment_resolver::{RecruitmentConnection, RecruitmentEdge},
