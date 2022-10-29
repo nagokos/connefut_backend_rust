@@ -185,9 +185,49 @@ impl User {
         ctx: &Context<'_>,
         after: Option<ID>,
         first: Option<i32>,
+    ) -> Result<RecruitmentConnection> {
+        let pool = get_db_pool(ctx).await?;
+        let params = SearchParams::new(after, first)?;
+        let recruitments = get_stocked_recruitments(pool, self.id, params).await?;
+
+        let edges: Vec<Option<RecruitmentEdge>> = recruitments
+            .iter()
+            .map(|recruitment| {
+                RecruitmentEdge {
+                    node: recruitment.to_owned(),
+                }
+                .into()
+            })
+            .collect();
+
+        let page_info = match recruitments.last() {
+            Some(recruitment) => {
+                let has_next_page =
+                    is_next_stocked_recruitment(pool, recruitment.id, self.id).await?;
+                let end_cursor = Some(id_encode("Recruitment", recruitment.id));
+                PageInfo {
+                    has_next_page,
+                    end_cursor,
+                    ..Default::default()
+                }
+            }
+            None => Default::default(),
+        };
+
+        Ok(RecruitmentConnection {
+            edges: edges.into(),
+            page_info,
+        })
+    }
+    /// ユーザーがフォローしているユーザーのリスト
+    async fn following(
+        &self,
+        ctx: &Context<'_>,
+        after: Option<ID>,
+        first: Option<i32>,
     ) -> async_graphql::Result<FollowingConnection> {
         let pool = get_db_pool(ctx).await?;
-        let params = SearchParams::new(first, after)?;
+        let params = SearchParams::new(after, first)?;
 
         let following = get_following(pool, self.id, params).await?;
 
@@ -218,98 +258,6 @@ impl User {
             edges: edges.into(),
             page_info,
         })
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Viewer {
-    pub account_user: User,
-}
-
-#[Object]
-impl Viewer {
-    async fn account_user(&self) -> User {
-        self.account_user.clone()
-    }
-    async fn recruitments(
-        &self,
-        ctx: &Context<'_>,
-        first: Option<i32>,
-        after: Option<ID>,
-    ) -> async_graphql::Result<RecruitmentConnection> {
-        let pool = get_db_pool(ctx).await?;
-        let search_params = SearchParams::new(first, after)?;
-        let recruitments =
-            get_viewer_recruitments(pool, search_params, self.account_user.id).await?;
-
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges: Vec<RecruitmentEdge> = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: String::default(),
-                    node: recruitment.to_owned(),
-                })
-                .collect();
-            Some(edges)
-        };
-
-        let page_info = match recruitments.last() {
-            Some(recruitment) => {
-                let has_next_page =
-                    is_next_viewer_recruitment(pool, recruitment.id, self.account_user.id).await?;
-                let end_cursor = id_encode("Recruitment", recruitment.id);
-                PageInfo {
-                    has_next_page,
-                    end_cursor: Some(end_cursor),
-                    ..Default::default()
-                }
-            }
-            None => Default::default(),
-        };
-        Ok(RecruitmentConnection { edges, page_info })
-    }
-    async fn stocked_recruitments(
-        &self,
-        ctx: &Context<'_>,
-        first: Option<i32>,
-        after: Option<ID>,
-    ) -> Result<RecruitmentConnection> {
-        let pool = get_db_pool(ctx).await?;
-        let search_params = SearchParams::new(first, after)?;
-
-        let recruitments =
-            get_stocked_recruitments(pool, self.account_user.id, search_params).await?;
-
-        let edges = if recruitments.is_empty() {
-            None
-        } else {
-            let edges: Vec<RecruitmentEdge> = recruitments
-                .iter()
-                .map(|recruitment| RecruitmentEdge {
-                    cursor: String::default(),
-                    node: recruitment.to_owned(),
-                })
-                .collect();
-            Some(edges)
-        };
-
-        let page_info = match recruitments.last() {
-            Some(recruitment) => {
-                let end_cursor = id_encode("Recruitment", recruitment.id);
-                let has_next_page =
-                    is_next_stocked_recruitment(pool, recruitment.id, self.account_user.id).await?;
-                PageInfo {
-                    end_cursor: Some(end_cursor),
-                    has_next_page,
-                    ..Default::default()
-                }
-            }
-            None => Default::default(),
-        };
-
-        Ok(RecruitmentConnection { edges, page_info })
     }
 }
 
@@ -367,13 +315,6 @@ pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
     match user {
         Ok(user) => {
             tracing::info!("Register user successed!!");
-            match send_email_verification_code(&user).await {
-                Ok(_) => (),
-                Err(e) => {
-                    tracing::error!("{:?}", e);
-                    return Err(e);
-                }
-            }
             Ok(user)
         }
         Err(e) => {
