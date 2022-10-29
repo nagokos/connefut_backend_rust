@@ -1,7 +1,7 @@
 use anyhow::Result;
 use async_graphql::{Object, ID};
 
-use crate::graphql::id_decode;
+use crate::graphql::{id_decode, models::recruitment::RecruitmentStatus};
 
 //* SearchParams */
 #[derive(Debug)]
@@ -11,8 +11,17 @@ pub struct SearchParams {
     pub num_rows: i32,   // 何件取得するかを保持
 }
 
+#[derive(Debug, Default)]
+pub struct RecruitmentSearchParams {
+    pub use_after: bool, // afterを使用しているかどうか
+    pub after: i32,      // decodeしたidを保持
+    pub num_rows: i32,   // 何件取得するかを保持
+    pub use_status: bool,
+    pub status: RecruitmentStatus,
+}
+
 impl SearchParams {
-    pub fn new(first: Option<i32>, after: Option<ID>) -> Result<Self> {
+    pub fn new(after: Option<ID>, first: Option<i32>) -> Result<Self> {
         if let (Some(first), None) = (first, after.as_ref()) {
             let search_params = SearchParams {
                 use_after: false,
@@ -36,6 +45,45 @@ impl SearchParams {
                 "[first], [first, after] のいずれかの組み合わせで指定してください"
             ))
         }
+    }
+}
+
+impl RecruitmentSearchParams {
+    pub fn new(
+        after: Option<ID>,
+        first: Option<i32>,
+        status: Option<RecruitmentStatus>,
+    ) -> Result<Self> {
+        let mut params = if let (Some(first), None) = (first, after.as_ref()) {
+            let search_params = RecruitmentSearchParams {
+                num_rows: first,
+                ..Default::default()
+            };
+            Ok(search_params)
+        } else if let (Some(first), Some(after)) = (first, after.as_ref()) {
+            if after.is_empty() {
+                return Err(anyhow::anyhow!("afterが正しくありません"));
+            }
+            let search_params = RecruitmentSearchParams {
+                use_after: true,
+                after: id_decode(after)? as i32,
+                num_rows: first,
+                ..Default::default()
+            };
+            Ok(search_params)
+        } else {
+            tracing::error!("search params validation error");
+            Err(anyhow::anyhow!(
+                "[first], [first, after] のいずれかの組み合わせで指定してください"
+            ))
+        }?;
+
+        if let Some(status) = status {
+            params.use_status = true;
+            params.status = status;
+        }
+
+        Ok(params)
     }
 }
 
