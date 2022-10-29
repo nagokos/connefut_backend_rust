@@ -5,8 +5,11 @@ use chrono::{DateTime, Local};
 use sqlx::{postgres::PgRow, PgPool, Row};
 
 use crate::graphql::{
-    auth::get_viewer, id_decode, loader::get_loaders,
-    mutations::recruitment_mutation::RecruitmentInput, utils::pagination::SearchParams,
+    auth::get_viewer,
+    id_decode,
+    loader::get_loaders,
+    mutations::recruitment_mutation::RecruitmentInput,
+    utils::pagination::{RecruitmentSearchParams, SearchParams},
 };
 
 use super::{
@@ -23,7 +26,7 @@ use super::{
 #[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type)]
 #[sqlx(type_name = "recruitment_category")]
 #[sqlx(rename_all = "lowercase")]
-pub enum Category {
+pub enum RecruitmentCategory {
     Opponent,
     Personal,
     Member,
@@ -31,10 +34,11 @@ pub enum Category {
     Other,
 }
 
-#[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type)]
+#[derive(Enum, Clone, Copy, Eq, PartialEq, Debug, sqlx::Type, Default)]
 #[sqlx(type_name = "recruitment_status")]
 #[sqlx(rename_all = "lowercase")]
-pub enum Status {
+pub enum RecruitmentStatus {
+    #[default]
     Draft,
     Published,
     Closed,
