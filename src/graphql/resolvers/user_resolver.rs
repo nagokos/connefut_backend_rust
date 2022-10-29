@@ -8,9 +8,9 @@ use crate::{
             jwt::{self, Claims},
         },
         id_decode, id_encode,
+        mail::sender::send_email_verification_code,
         models::user::{
             self, authentication, follow, get_user_from_email, get_user_from_id, unfollow, User,
-            Viewer,
         },
         mutations::user_mutation::{
             FollowUserInput, FollowUserResult, FollowUserSuccess, LoginUserAuthenticationError,
@@ -47,17 +47,10 @@ pub struct UserQuery;
 
 #[Object]
 impl UserQuery {
-    async fn viewer(&self, ctx: &Context<'_>) -> Result<Option<Viewer>> {
+    /// 現在認証されているユーザーを取得する
+    async fn viewer(&self, ctx: &Context<'_>) -> Result<Option<User>> {
         let user = get_viewer(ctx).await;
-        match user {
-            Some(user) => {
-                let viewer = Viewer {
-                    account_user: { user.to_owned() },
-                };
-                Ok(Some(viewer))
-            }
-            None => Ok(None),
-        }
+        Ok(user.to_owned())
     }
 }
 
