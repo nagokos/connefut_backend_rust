@@ -31,8 +31,8 @@ impl RecruitmentEdge {
     pub async fn cursor(&self) -> ID {
         id_encode("Recruitment", self.node.id).into()
     }
-    pub async fn node(&self) -> Recruitment {
-        self.node.clone()
+    pub async fn node(&self) -> Option<Recruitment> {
+        self.node.clone().into()
     }
 }
 
