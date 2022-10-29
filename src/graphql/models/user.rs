@@ -106,8 +106,18 @@ impl User {
     async fn email_verification_status(&self) -> EmailVerificationStatus {
         self.email_verification_status
     }
-    // todo is_following_viewerの追加(このユーザーがviewerをフォローしているかを返す)
-    // todo async fn is_following_viewer() -> Option<async_graphql::Result<bool>>
+    /// このユーザーがログインユーザー(Viewer)をフォローしているか
+    async fn is_following_viewer(&self, ctx: &Context<'_>) -> FieldResult<bool> {
+        let loaders = get_loaders(ctx).await;
+        let viewer = match get_viewer(ctx).await {
+            Some(viewer) => viewer,
+            None => return Ok(false),
+        };
+
+        let is_following_viewer = loaders
+            .following_loader
+            .load_one([self.id, viewer.id])
+            .await?;
 
     // todo N+1に対応
     // このユーザーがViewerからフォローされているか
