@@ -9,7 +9,7 @@ license = "MIT"
 [dependencies]
 #* framework
 axum = "0.5.16"
-hyper = { version = "0.14.20", features = ["full"] }
+hyper = { version = "0.14.21", features = ["full"] }
 tower = "0.4.13"
 tokio = {version = "1.21.2", features = ["full"]}
 #* http client
