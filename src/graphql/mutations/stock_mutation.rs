@@ -1,7 +1,7 @@
-use async_graphql::{InputObject, Object, SimpleObject, Union, ID};
+use async_graphql::{InputObject, SimpleObject, Union, ID};
 
 use crate::graphql::{
-    id_encode, models::stock::Stock, resolvers::recruitment_resolver::RecruitmentEdge,
+    models::recruitment::Recruitment, resolvers::recruitment_resolver::RecruitmentEdge,
 };
 
 // Add Stock Mutation
@@ -19,7 +19,6 @@ pub enum AddStockResult {
 
 #[derive(SimpleObject)]
 pub struct AddStockSuccess {
-    pub feedback: Stock,
     pub recruitment_edge: RecruitmentEdge,
 }
 
@@ -34,17 +33,7 @@ pub struct RemoveStockInput {
     pub recruitment_id: ID,
 }
 
+#[derive(SimpleObject)]
 pub struct RemoveStockResult {
-    pub feedback: Stock,
-}
-
-#[Object]
-impl RemoveStockResult {
-    async fn feedback(&self) -> Stock {
-        self.feedback
-    }
-    async fn remove_recruitment_id(&self) -> ID {
-        // relayでストック一覧から削除する際に必要
-        id_encode("Recruitment", self.feedback.recruitment_id).into()
-    }
+    pub recruitment: Recruitment,
 }
