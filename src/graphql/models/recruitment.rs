@@ -1,5 +1,5 @@
 use anyhow::Result;
-use async_graphql::{Context, Enum, Object, ID};
+use async_graphql::{Context, Enum, FieldResult, Object, ID};
 use base64::{encode_config, URL_SAFE};
 use chrono::{DateTime, Local};
 use sqlx::{postgres::PgRow, PgPool, Row};
@@ -15,7 +15,6 @@ use crate::graphql::{
 use super::{
     prefecture::Prefecture,
     sport::Sport,
-    stock::Stock,
     tag::{
         add_recruitment_tags, add_recruitment_tags_tx, get_recruitment_tags,
         remove_recruitment_tags_tx, Tag,
@@ -105,41 +104,28 @@ impl Recruitment {
     pub async fn detail(&self) -> Option<&str> {
         self.detail.as_deref()
     }
-    // todo stockではなくてviewer_has_stockedを作ればいい
-    // 募集からストックを取得するときはN+1が発生してしまうため
-    pub async fn stock(&self, ctx: &Context<'_>) -> async_graphql::Result<Stock> {
+    /// この募集がストックされている数
+    pub async fn stocked_count(&self, ctx: &Context<'_>) -> FieldResult<i64> {
+        let loaders = get_loaders(ctx).await;
+        let stocked_count = loaders.stock_loader.load_one(self.id).await?;
+        match stocked_count {
+            Some(count) => Ok(count),
+            None => Ok(0),
+        }
+    }
+    /// この募集をログインユーザー(Viewer)がストックしているか
+    pub async fn viewer_has_stocked(&self, ctx: &Context<'_>) -> FieldResult<bool> {
         let loaders = get_loaders(ctx).await;
         let viewer = match get_viewer(ctx).await {
             Some(viewer) => viewer,
-            None => {
-                let stock = Stock {
-                    recruitment_id: self.id,
-                    viewer_has_stocked: false,
-                };
-                return Ok(stock);
-            }
+            None => return Ok(false),
         };
 
-        // [viewer_id, recruitment_id]の形のkeyにする
-        // データストアでは{ [viewer_id, recruitment_id]: () }の形になっている(keyの組み合わせが重要)
-        // keyに対応したデータが存在＝ストックしているのでviwer_has_stockedをtrue存在しなかったらfalseを返す
-        let is_already_stocked = loaders.stock_loader.load_one([viewer.id, self.id]).await?;
+        let viewer_has_stocked = loaders.stock_loader.load_one([viewer.id, self.id]).await?;
 
-        match is_already_stocked {
-            Some(_) => {
-                let stock = Stock {
-                    recruitment_id: self.id,
-                    viewer_has_stocked: true,
-                };
-                Ok(stock)
-            }
-            None => {
-                let stock = Stock {
-                    recruitment_id: self.id,
-                    viewer_has_stocked: false,
-                };
-                Ok(stock)
-            }
+        match viewer_has_stocked {
+            Some(_) => Ok(true),
+            None => Ok(false),
         }
     }
     /// この募集を作成したユーザー
