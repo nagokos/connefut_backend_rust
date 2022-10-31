@@ -7,7 +7,7 @@ use crate::{
         id_decode,
         models::{
             recruitment::get_recruitment,
-            stock::{add_stock, is_already_stocked, remove_stock, Stock},
+            stock::{add_stock, is_already_stocked, remove_stock},
         },
         mutations::stock_mutation::{
             AddStockAlreadyStockedError, AddStockInput, AddStockResult, AddStockSuccess,
@@ -49,10 +49,6 @@ impl StockMutation {
             }
         };
         let success = AddStockSuccess {
-            feedback: Stock {
-                recruitment_id: recruitment.id,
-                viewer_has_stocked: true,
-            },
             recruitment_edge: RecruitmentEdge { node: recruitment },
         };
 
@@ -79,12 +75,7 @@ impl StockMutation {
                 return Err(async_graphql::Error::new("recruitment not found..."));
             }
         };
-        let success = RemoveStockResult {
-            feedback: Stock {
-                recruitment_id: recruitment.id,
-                viewer_has_stocked: false,
-            },
-        };
+        let success = RemoveStockResult { recruitment };
         Ok(success)
     }
 }
