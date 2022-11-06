@@ -52,7 +52,7 @@ async fn main() {
         let arc_pool = Arc::new(pool);
         let loaders = Loaders::new(&arc_pool);
         let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
-            .data(arc_pool.clone())
+            .data(Arc::clone(&pool))
             .data(loaders)
             .data(config)
             .finish();
