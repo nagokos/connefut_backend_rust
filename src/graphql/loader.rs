@@ -28,14 +28,42 @@ pub struct Loaders {
 
 impl Loaders {
     pub fn new(pool: &Arc<Pool<Postgres>>) -> Self {
-        let user_loader = DataLoader::new(UserLoader { pool: pool.clone() }, tokio::spawn);
-        let following_loader =
-            DataLoader::new(FollowingLoader { pool: pool.clone() }, tokio::spawn);
-        let tag_loader = DataLoader::new(TagLoader { pool: pool.clone() }, tokio::spawn);
-        let prefecture_loader =
-            DataLoader::new(PrefectureLoader { pool: pool.clone() }, tokio::spawn);
-        let sport_loader = DataLoader::new(SportLoader { pool: pool.clone() }, tokio::spawn);
-        let stock_loader = DataLoader::new(StockLoader { pool: pool.clone() }, tokio::spawn);
+        let user_loader = DataLoader::new(
+            UserLoader {
+                pool: Arc::clone(pool),
+            },
+            tokio::spawn,
+        );
+        let following_loader = DataLoader::new(
+            FollowingLoader {
+                pool: Arc::clone(pool),
+            },
+            tokio::spawn,
+        );
+        let tag_loader = DataLoader::new(
+            TagLoader {
+                pool: Arc::clone(pool),
+            },
+            tokio::spawn,
+        );
+        let prefecture_loader = DataLoader::new(
+            PrefectureLoader {
+                pool: Arc::clone(pool),
+            },
+            tokio::spawn,
+        );
+        let sport_loader = DataLoader::new(
+            SportLoader {
+                pool: Arc::clone(pool),
+            },
+            tokio::spawn,
+        );
+        let stock_loader = DataLoader::new(
+            StockLoader {
+                pool: Arc::clone(pool),
+            },
+            tokio::spawn,
+        );
 
         Self {
             user_loader,
