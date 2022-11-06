@@ -39,6 +39,7 @@ async fn graphql_handler(
     schema.execute(req).await.into()
 }
 
+// todo unwrap使わない
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt()
