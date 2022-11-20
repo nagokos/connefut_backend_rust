@@ -11,8 +11,6 @@ use crate::graphql::models::{
     prefecture::Prefecture, recruitment::Recruitment, sport::Sport, tag::Tag, user::User,
 };
 
-use super::models::stock::Stock;
-
 //* Node interface */
 /// IDを持つオブジェクト
 #[derive(Interface)]
@@ -23,7 +21,6 @@ pub enum Node {
     Tag(Tag),
     User(User),
     Recruitment(Recruitment),
-    Stock(Stock),
 }
 
 #[derive(Default)]

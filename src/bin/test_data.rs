@@ -63,10 +63,12 @@ async fn create_users(pool: &PgPool) -> Result<()> {
 
         let salt = SaltString::generate(&mut OsRng);
         let argon2 = Argon2::default();
-        let password_digest = argon2
-            .hash_password(password, &salt)
-            .expect("error")
-            .to_string();
+        let password_digest = Some(
+            argon2
+                .hash_password(password, &salt)
+                .expect("error")
+                .to_string(),
+        );
 
         User {
             id: i,

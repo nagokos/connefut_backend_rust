@@ -17,3 +17,6 @@ dc_logs:
 
 dc_login:
 	${DC} exec -it web bash
+
+dc_re:
+	${DC} restart

@@ -15,15 +15,37 @@ pub struct Database {
 }
 
 #[derive(Deserialize, Debug)]
+pub struct Google {
+    pub client_id: String,
+    pub client_secret: String,
+    pub callback_url: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Line {
+    pub client_id: String,
+    pub client_secret: String,
+    pub callback_url: String,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct Config {
     pub database: Database,
+    pub google: Google,
+    pub line: Line,
 }
 
 impl Config {
     pub fn new() -> Result<Self> {
         let database = envy::prefixed("POSTGRES_").from_env::<Database>()?;
+        let google = envy::prefixed("GOOGLE_").from_env::<Google>()?;
+        let line = envy::prefixed("LINE_").from_env::<Line>()?;
 
-        let config = Config { database };
+        let config = Config {
+            database,
+            google,
+            line,
+        };
         Ok(config)
     }
 }

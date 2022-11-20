@@ -9,6 +9,7 @@ license = "MIT"
 [dependencies]
 #* framework
 axum = "0.5.16"
+axum-extra = {version = "0.3.7", features = ["cookie", "query"]}
 hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
 tokio = {version = "1.21.2", features = ["full"]}
@@ -59,3 +60,7 @@ lettre = { version = "0.10", features = ["tokio1", "tokio1-rustls-tls", "tokio1-
 fake = { version = "2.5"}
 #* async trait
 async-trait = "0.1.57"
+#* openid-connect
+openidconnect = "2.4.0"
+#* features
+futures = "0.3.25"

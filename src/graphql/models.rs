@@ -1,3 +1,4 @@
+pub mod authentication;
 pub mod prefecture;
 pub mod recruitment;
 pub mod sport;

@@ -54,6 +54,7 @@ impl RecruitmentSearchParams {
         first: Option<i32>,
         status: Option<RecruitmentStatus>,
     ) -> Result<Self> {
+        // matchとかで表現できれば
         let mut params = if let (Some(first), None) = (first, after.as_ref()) {
             let search_params = RecruitmentSearchParams {
                 num_rows: first,

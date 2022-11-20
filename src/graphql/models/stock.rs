@@ -1,25 +1,6 @@
 use anyhow::Result;
-use async_graphql::{Object, ID};
 use chrono::Local;
 use sqlx::{postgres::PgRow, PgPool, Row};
-
-use crate::graphql::id_encode;
-
-#[derive(Clone, Copy)]
-pub struct Stock {
-    pub recruitment_id: i64,
-    pub viewer_has_stocked: bool,
-}
-
-#[Object]
-impl Stock {
-    pub async fn id(&self) -> ID {
-        id_encode("Stock", self.recruitment_id).into()
-    }
-    pub async fn viewer_has_stocked(&self) -> bool {
-        self.viewer_has_stocked
-    }
-}
 
 pub async fn is_already_stocked(pool: &PgPool, user_id: i64, recruitment_id: i64) -> Result<bool> {
     let sql = r#"

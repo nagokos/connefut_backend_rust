@@ -1,24 +1,20 @@
-use cookie::Cookie;
+use axum_extra::extract::cookie::Cookie;
 use hyper::{header::COOKIE, HeaderMap};
 
 pub fn get_cookie_from_header(headers: &HeaderMap) -> Option<Vec<&str>> {
-    match headers.get(COOKIE) {
-        Some(v) => match v.to_str().ok() {
-            Some(c) => {
-                let cookie_vec: Vec<&str> = c.split(';').collect();
-                Some(cookie_vec)
-            }
-            None => None,
-        },
-        None => None,
-    }
+    headers.get(COOKIE).and_then(|v| {
+        v.to_str().ok().map(|c| {
+            let cookie = c.split(';').collect::<Vec<&str>>();
+            cookie
+        })
+    })
 }
 
 // todo 複数取得できるようにする
 pub fn get_value_from_cookie(headers: &HeaderMap, want_cookie_name: &str) -> Option<String> {
-    let cookies = get_cookie_from_header(headers)?;
+    let cookie = get_cookie_from_header(headers)?;
 
-    for c in cookies {
+    for c in cookie {
         match Cookie::parse(c) {
             Ok(parsed_cookie) => {
                 if parsed_cookie.name() == want_cookie_name {

@@ -549,10 +549,10 @@ pub async fn update(
     let add_tags = decoded_sent_tag
         .clone()
         .into_iter()
-        .filter(|&sent_tag| {
+        .filter(|sent_tag| {
             !current_tags
                 .iter()
-                .any(|current_tag| sent_tag == current_tag.id) // anyは一つでも一致すればtrueを返すため!current_tagsにする
+                .any(|current_tag| *sent_tag == current_tag.id) // anyは一つでも一致すればtrueを返すため!current_tagsにする
         })
         .collect::<Vec<i64>>();
     if let Err(e) = add_recruitment_tags_tx(&mut tx, add_tags, recruitment.id).await {
