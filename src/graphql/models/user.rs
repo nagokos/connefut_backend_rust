@@ -8,13 +8,13 @@ use async_graphql::*;
 use async_graphql::{Context, Enum, Object, ID};
 use chrono::{DateTime, Duration, Local};
 use rand::Rng;
-use sqlx::{postgres::PgRow, PgPool, Row};
+use sqlx::{postgres::PgRow, PgPool, Postgres, Row, Transaction};
 use std::ops::Add;
 
 use crate::{
     database::get_db_pool,
     graphql::{
-        auth::get_viewer,
+        auth::{external::UserInfo, get_viewer},
         id_encode,
         loader::get_loaders,
         mutations::user_mutation::RegisterUserInput,
@@ -63,7 +63,7 @@ pub struct User {
     pub email_verification_status: EmailVerificationStatus,
     pub email_verification_code: Option<String>,
     pub email_verification_code_expires_at: Option<DateTime<Local>>,
-    pub password_digest: String,
+    pub password_digest: Option<String>,
 }
 
 #[Object]
@@ -148,6 +148,7 @@ impl User {
     ) -> async_graphql::Result<RecruitmentConnection> {
         let params = RecruitmentSearchParams::new(after, first, status)?;
         let pool = get_db_pool(ctx).await?;
+
         let recruitments = get_user_recruitments(pool, &params, self.id).await?;
         let edges: Vec<Option<RecruitmentEdge>> = recruitments
             .iter()
@@ -318,6 +319,43 @@ pub async fn create(pool: &PgPool, input: &RegisterUserInput) -> Result<User> {
         Err(e) => {
             tracing::error!("Register user failed.");
             tracing::error!("{}", e.to_string());
+            Err(e.into())
+        }
+    }
+}
+
+#[tracing::instrument]
+pub async fn create_with_external_certification(
+    tx: &mut Transaction<'_, Postgres>,
+    user_info: &UserInfo,
+) -> anyhow::Result<User> {
+    let sql = r#"
+        INSERT INTO users 
+            (name, email, email_verification_status, avatar, last_sign_in_at, created_at, updated_at)
+        VALUES
+            ($1, $2, $3, $4, $5, $6, $7)
+        RETURNING *
+    "#;
+
+    let now = Local::now();
+    let row = sqlx::query_as::<_, User>(sql)
+        .bind(user_info.name.as_str())
+        .bind(user_info.email.as_str())
+        .bind(EmailVerificationStatus::Verified)
+        .bind(user_info.picture.as_ref())
+        .bind(now)
+        .bind(now)
+        .bind(now)
+        .fetch_one(&mut *tx)
+        .await;
+
+    match row {
+        Ok(user) => {
+            tracing::info!("create with external cerification successed!!");
+            Ok(user)
+        }
+        Err(e) => {
+            tracing::error!("create with external cetification failed: {:?}", e);
             Err(e.into())
         }
     }
