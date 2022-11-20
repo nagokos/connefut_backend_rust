@@ -117,31 +117,30 @@ impl UserMutation {
             }
         };
 
-        match authentication(input.password.as_bytes(), &user.password_digest) {
-            Ok(is_auth) => {
-                if !is_auth {
-                    let auth_error = LoginUserAuthenticationError {
-                        message: String::from("メールアドレス、またはパスワードが正しくありません"),
-                    };
-                    tracing::error!("Failed to authenticate user");
-                    return Ok(auth_error.into());
-                }
-
-                let claims = Claims {
-                    sub: user.id.to_string(),
-                    ..Default::default()
-                };
-                match jwt::token_encode(claims) {
-                    Ok(token) => {
-                        jwt::set_jwt_cookie(token, ctx);
-                        tracing::info!("User authenticated.");
-                        Ok(LoginUserSuccess { viewer: user }.into())
-                    }
-                    Err(e) => Err(e.into()),
-                }
-            }
-            Err(e) => Err(e.into()),
+        let is_auth = authentication(
+            input.password.as_bytes(),
+            user.password_digest.as_ref().ok_or_else(|| {
+                tracing::error!("password_digest not found");
+                async_graphql::Error::new("password_digest not found")
+            })?,
+        )?;
+        if !is_auth {
+            let auth_error = LoginUserAuthenticationError {
+                message: String::from("メールアドレス、またはパスワードが正しくありません"),
+            };
+            tracing::error!("Failed to authenticate user");
+            return Ok(auth_error.into());
         }
+
+        let claims = Claims {
+            sub: user.id.to_string(),
+            ..Default::default()
+        };
+        let jwt_token = jwt::token_encode(claims)?;
+        jwt::set_jwt_cookie(jwt_token, ctx);
+        tracing::info!("User authenticated.");
+
+        Ok(LoginUserSuccess { viewer: user }.into())
     }
     /// ユーザーをフォローする
     async fn follow_user(
