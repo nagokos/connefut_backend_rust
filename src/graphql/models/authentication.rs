@@ -2,7 +2,7 @@ use anyhow::Result;
 use chrono::Local;
 use sqlx::{PgPool, Postgres, Transaction};
 
-use crate::graphql::auth::external::{AuthenticationProvider, UserInfo};
+use crate::graphql::auth::external::AuthenticationProvider;
 
 use super::user::User;
 
