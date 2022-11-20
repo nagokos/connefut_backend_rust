@@ -5,7 +5,7 @@ use axum::{
         header::{self, HeaderMap},
         HeaderValue, Method,
     },
-    routing::post,
+    routing::{get, post},
     Extension, Router, Server,
 };
 use sqlx::PgPool;
@@ -15,7 +15,14 @@ use tracing_subscriber::fmt::format::FmtSpan;
 
 use self::graphql::loader::Loaders;
 use self::graphql::{GraphqlSchema, Mutation, Query};
-use crate::graphql::auth::{cookie::get_value_from_cookie, jwt::get_user_from_token};
+use crate::graphql::auth::{
+    cookie::get_value_from_cookie,
+    external::{
+        google::{auth_google_callback, auth_google_redirect, new_google_auth_client},
+        line::{auth_line_callback, auth_line_redirect, new_line_auth_client},
+    },
+    jwt::get_user_from_token,
+};
 pub mod config;
 mod database;
 mod graphql;
@@ -50,8 +57,10 @@ async fn main() {
     let server = async {
         let config = get_config();
         let pool = pool(config).await.unwrap();
-        let arc_pool = Arc::new(pool);
-        let loaders = Loaders::new(&arc_pool);
+        let pool = Arc::new(pool);
+        let google_auth_client = Arc::new(new_google_auth_client(&config.google).await.unwrap());
+        let line_auth_client = Arc::new(new_line_auth_client(&config.line).await.unwrap());
+        let loaders = Loaders::new(&pool);
         let schema = Schema::build(Query::default(), Mutation::default(), EmptySubscription)
             .data(Arc::clone(&pool))
             .data(loaders)
@@ -60,6 +69,10 @@ async fn main() {
 
         let app = Router::new()
             .route("/graphql", post(graphql_handler))
+            .route("/oauth/google", get(auth_google_redirect))
+            .route("/oauth/google/callback", get(auth_google_callback))
+            .route("/oauth/line", get(auth_line_redirect))
+            .route("/oauth/line/callback", get(auth_line_callback))
             .layer(
                 CorsLayer::new()
                     .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
@@ -73,8 +86,11 @@ async fn main() {
                     .allow_methods(vec![Method::GET, Method::POST, Method::OPTIONS])
                     .allow_credentials(true),
             )
+            .layer(Extension(config))
             .layer(Extension(schema))
-            .layer(Extension(arc_pool));
+            .layer(Extension(google_auth_client))
+            .layer(Extension(line_auth_client))
+            .layer(Extension(pool));
 
         Server::bind(&"0.0.0.0:8080".parse().unwrap())
             .serve(app.into_make_service())
