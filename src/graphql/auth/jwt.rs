@@ -27,6 +27,7 @@ impl Default for Claims {
     }
 }
 
+// keyは別途用意してawsのsecretmanager的なのに保存(開発環境、本番で分ける)
 pub fn token_encode(claims: Claims) -> Result<String> {
     let token = encode(
         &Header::default(),
@@ -54,7 +55,7 @@ pub fn token_decode(token: String) -> Result<TokenData<Claims>> {
 pub async fn get_user_from_token(pool: &PgPool, token: String) -> Option<User> {
     match token_decode(token) {
         Ok(token_data) => {
-            match get_user_from_id(pool, token_data.claims.sub.parse::<i64>().unwrap()).await {
+            match get_user_from_id(pool, token_data.claims.sub.parse::<i64>().ok()?).await {
                 Ok(user) => user,
                 Err(_) => None,
             }
