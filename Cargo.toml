@@ -8,7 +8,7 @@ license = "MIT"
 
 [dependencies]
 #* framework
-axum = "0.5.16"
+axum = "0.6.0"
 axum-extra = {version = "0.3.7", features = ["cookie", "query"]}
 hyper = { version = "0.14.20", features = ["full"] }
 tower = "0.4.13"
